@@ -1,0 +1,56 @@
+import { PrismaClient, User } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+export class UserService {
+  async findAll(): Promise<User[]> {
+    return await prisma.user.findMany();
+  }
+
+  async findById(id: string): Promise<User | null> {
+    return await prisma.user.findUnique({
+      where: { id },
+    });
+  }
+
+  async create(userData: User): Promise<User> {
+    if (!userData.email || !userData.name || !userData.password) {
+      throw new Error('Missing required fields');
+    }
+
+    return await prisma.user.create({
+      data: {
+        email: userData.email,
+        name: userData.name,
+        password: userData.password,
+      },
+    });
+  }
+
+  async update(id: string, userData: User): Promise<User | null> {
+    try {
+      return await prisma.user.update({
+        where: { id },
+        data: {
+          ...userData,
+          updatedAt: new Date(),
+        },
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  async delete(id: string): Promise<boolean> {
+    try {
+      await prisma.user.delete({
+        where: { id },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+export const userService = new UserService();
