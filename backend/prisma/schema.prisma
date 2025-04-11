@@ -1,0 +1,59 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")  // Required for Neon
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  name          String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscription  Subscription?
+  adReports     AdReport[]
+  scrapingJobs  ScrapingJob[]
+}
+
+model AdReport {
+  id          String      @id @default(uuid())
+  platform    String      // Meta, Google, TikTok
+  adContent   Json
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  scrapingJob ScrapingJob @relation(fields: [jobId], references: [id])
+  jobId       String
+}
+
+model Subscription {
+  id        String    @id @default(uuid())
+  plan      String    // free, pro, enterprise
+  status    String    // active, inactive, cancelled
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model ScrapingJob {
+  id        String     @id @default(uuid())
+  status    String     // pending, running, completed, failed
+  platform  String     // Meta, Google, TikTok
+  config    Json
+  startTime DateTime?
+  endTime   DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  adReports AdReport[]
+}
