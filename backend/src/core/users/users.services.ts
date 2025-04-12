@@ -10,6 +10,7 @@ export class UserService {
   async findById(id: string): Promise<User | null> {
     return await prisma.user.findUnique({
       where: { id },
+      include: { subscription: true },
     });
   }
 
@@ -17,6 +18,11 @@ export class UserService {
     if (!userData.email || !userData.name || !userData.password) {
       throw new Error('Missing required fields');
     }
+
+    // check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: userData.email },
+    });
 
     return await prisma.user.create({
       data: {

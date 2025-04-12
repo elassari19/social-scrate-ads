@@ -5,13 +5,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import passport from 'passport';
-import session from 'express-session';
-import Redis from 'ioredis';
-import ConnectRedis from 'connect-redis';
 import { errorHandler, notFoundHandler } from './errors';
 
-// import routes
+// Import passport configuration
+import './auth/passport.config';
+
+// Import routes
 import usersRouter from './users/users.routes';
+import authRouter from './auth/auth.routes';
 import { redisSession } from '../utils/redis.config';
 
 export const createApp = () => {
@@ -34,6 +35,7 @@ export const createApp = () => {
   app.use(passport.session());
 
   // Routes
+  app.use('/auth', authRouter);
   app.use('/users', usersRouter);
 
   // Error handling

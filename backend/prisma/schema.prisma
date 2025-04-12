@@ -14,7 +14,7 @@ model User {
   id            String         @id @default(uuid())
   email         String         @unique
   password      String
-  name          String?
+  name          String
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   subscription  Subscription?
@@ -36,12 +36,12 @@ model AdReport {
 
 model Subscription {
   id        String    @id @default(uuid())
-  plan      String    // free, pro, enterprise
-  status    String    // active, inactive, cancelled
+  plan      String    @default("free")
+  status    String    @default("active")
   startDate DateTime  @default(now())
-  endDate   DateTime?
-  userId    String    @unique
-  user      User      @relation(fields: [userId], references: [id])
+  endDate   DateTime  @default(now())
+  user      User?     @relation(fields: [userId], references: [id])
+  userId    String?   @unique
 }
 
 model ScrapingJob {
