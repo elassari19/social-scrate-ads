@@ -8,6 +8,7 @@ import Redis from 'ioredis';
 // Import environment variables
 import dotenv from 'dotenv';
 import { redisConfig } from '../../utils/redis.config';
+import { createPerformancePlugin } from './monitoring';
 dotenv.config();
 
 // Initialize Redis client for Apollo Cache
@@ -42,6 +43,7 @@ export const createApolloServer = async (app: Application) => {
           };
         },
       },
+      createPerformancePlugin(),
     ],
   });
 
