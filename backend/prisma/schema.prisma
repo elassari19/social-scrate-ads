@@ -20,6 +20,7 @@ model User {
   subscription  Subscription?
   adReports     AdReport[]
   scrapingJobs  ScrapingJob[]
+  metrics       UserMetrics?
 }
 
 model AdReport {
@@ -32,6 +33,34 @@ model AdReport {
   user        User        @relation(fields: [userId], references: [id])
   scrapingJob ScrapingJob @relation(fields: [jobId], references: [id])
   jobId       String
+  metrics     AdMetrics?
+}
+
+// New model for ad metrics
+model AdMetrics {
+  id            String    @id @default(uuid())
+  impressions   Int       @default(0)
+  clicks        Int       @default(0)
+  engagement    Float     @default(0.0)  // Engagement rate
+  sentiment     Float?    // Sentiment score from AI analysis
+  performance   Json?     // Detailed performance metrics
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  adReport      AdReport  @relation(fields: [adReportId], references: [id])
+  adReportId    String    @unique
+}
+
+// New model for user metrics
+model UserMetrics {
+  id                String   @id @default(uuid())
+  totalScrapingJobs Int      @default(0)
+  totalAdReports    Int      @default(0)
+  avgJobDuration    Float?   // Average job duration in seconds
+  lastActivityDate  DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id])
+  userId            String   @unique
 }
 
 enum SubscriptionPlan {
@@ -66,6 +95,21 @@ model ScrapingJob {
   userId    String
   user      User       @relation(fields: [userId], references: [id])
   adReports AdReport[]
+  metrics   JobMetrics?
+}
+
+// New model for job metrics
+model JobMetrics {
+  id              String      @id @default(uuid())
+  duration        Int?        // Job duration in seconds
+  adsScraped      Int         @default(0)
+  successRate     Float       @default(0.0)  // Percentage of successful scrapes
+  errorCount      Int         @default(0)
+  resourceUsage   Json?       // CPU, memory usage, etc.
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  scrapingJob     ScrapingJob @relation(fields: [scrapingJobId], references: [id])
+  scrapingJobId   String      @unique
 }
 
 // npx prisma generate

@@ -13,14 +13,38 @@ import './auth/passport.config';
 // Import routes
 import usersRouter from './users/users.routes';
 import authRouter from './auth/auth.routes';
+import subscriptionRoute from './subscription/subscription.routes';
+
+// Import GraphQL server
+import { createApolloServer } from './graphql/server';
+
 import { redisSession } from '../utils/redis.config';
 
-export const createApp = () => {
+export const createApp = async () => {
   /* CONFIGURATIONS */
   const app = express();
   app.use(express.json());
   app.use(cookieParser());
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false,
+      contentSecurityPolicy: {
+        directives: {
+          imgSrc: [
+            `'self'`,
+            'data:',
+            'apollo-server-landing-page.cdn.apollographql.com',
+          ],
+          scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
+          manifestSrc: [
+            `'self'`,
+            'apollo-server-landing-page.cdn.apollographql.com',
+          ],
+          frameSrc: [`'self'`, 'sandbox.embed.apollographql.com'],
+        },
+      },
+    })
+  );
   app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
   app.use(morgan('common'));
   app.use(bodyParser.json());
@@ -37,14 +61,22 @@ export const createApp = () => {
   // Routes
   app.use('/auth', authRouter);
   app.use('/users', usersRouter);
+  app.use('/subscription', subscriptionRoute);
+
+  // Initialize Apollo Server - await it properly
+  await createApolloServer(app);
+  console.log('GraphQL server initialized');
+
+  // Root route should be defined before error handlers
+  app.get('/', (req, res) => {
+    res.send(
+      'Greetings from scrapper backend! Visit /graphql to access the GraphQL playground.'
+    );
+  });
 
   // Error handling
   app.use(notFoundHandler);
   app.use(errorHandler);
-
-  app.use('/', (req, res) => {
-    res.send('Greetings from scrapper backend!');
-  });
 
   return app;
 };
