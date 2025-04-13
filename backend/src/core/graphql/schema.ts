@@ -60,6 +60,7 @@ export const typeDefs = gql`
     requestCount: Int!
     lastResetDate: String!
     userId: String
+    user: User
   }
 
   type ScrapingJob {
