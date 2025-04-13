@@ -34,14 +34,24 @@ model AdReport {
   jobId       String
 }
 
+enum SubscriptionPlan {
+  Basic
+  Pro
+  Business
+}
+
 model Subscription {
-  id        String    @id @default(uuid())
-  plan      String    @default("free")
-  status    String    @default("active")
-  startDate DateTime  @default(now())
-  endDate   DateTime  @default(now())
-  user      User?     @relation(fields: [userId], references: [id])
-  userId    String?   @unique
+  id              String           @id @default(uuid())
+  plan            SubscriptionPlan @default(Basic)
+  status          String           @default("active")
+  startDate       DateTime         @default(now())
+  endDate         DateTime         @default(now())
+  requestLimit    Int              @default(10)  // Monthly request limit
+  dataPointLimit  Int              @default(10)  // Max data points per request
+  requestCount    Int              @default(0)   // Current month's request count
+  lastResetDate   DateTime         @default(now()) // For monthly reset
+  user            User?            @relation(fields: [userId], references: [id])
+  userId          String?          @unique
 }
 
 model ScrapingJob {
@@ -57,3 +67,6 @@ model ScrapingJob {
   user      User       @relation(fields: [userId], references: [id])
   adReports AdReport[]
 }
+
+// npx prisma generate
+// npx prisma db push

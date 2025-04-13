@@ -24,7 +24,7 @@ export class AuthService {
           name: userData.name || '',
           subscription: {
             create: {
-              plan: 'free',
+              plan: 'Basic',
               status: 'active',
               endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             },
