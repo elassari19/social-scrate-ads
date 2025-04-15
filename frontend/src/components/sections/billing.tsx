@@ -16,7 +16,7 @@ function Billing() {
       {
         title: 'Free',
         price: 0,
-        description: '$5 to spend in Apify Store or on your own Actors',
+        description: '$5 to spend in Tonfy Store or on your own Actors',
         features: ['$0.4 per compute unit', 'Community support'],
         buttonText: 'Start for free',
         buttonVariant: 'outline' as const,
@@ -26,7 +26,7 @@ function Billing() {
       {
         title: 'Starter',
         price: 39,
-        description: '$39 to spend in Apify Store or on your own Actors',
+        description: '$39 to spend in Tonfy Store or on your own Actors',
         features: ['$0.4 per compute unit', 'Chat'],
         buttonText: 'Choose plan',
         buttonVariant: 'outline' as const,
@@ -35,7 +35,7 @@ function Billing() {
       {
         title: 'Scale',
         price: 199,
-        description: '$199 to spend in Apify Store or on your own Actors',
+        description: '$199 to spend in Tonfy Store or on your own Actors',
         features: ['$0.3 per compute unit', 'Priority chat'],
         buttonText: 'Choose plan',
         buttonVariant: 'default' as const,
@@ -45,7 +45,7 @@ function Billing() {
       {
         title: 'Business',
         price: 999,
-        description: '$999 to spend in Apify Store or on your own Actors',
+        description: '$999 to spend in Tonfy Store or on your own Actors',
         features: ['$0.25 per compute unit', 'Account manager'],
         buttonText: 'Choose plan',
         buttonVariant: 'outline' as const,
@@ -56,7 +56,7 @@ function Billing() {
       {
         title: 'Free',
         price: 0,
-        description: '$5 to spend in Apify Store or on your own Actors',
+        description: '$5 to spend in Tonfy Store or on your own Actors',
         features: ['$0.4 per compute unit', 'Community support'],
         buttonText: 'Start for free',
         buttonVariant: 'outline' as const,
@@ -66,7 +66,7 @@ function Billing() {
       {
         title: 'Starter',
         price: 35, // 10% discount applied
-        description: '$35 to spend in Apify Store or on your own Actors',
+        description: '$35 to spend in Tonfy Store or on your own Actors',
         features: ['$0.36 per compute unit', 'Chat'],
         buttonText: 'Choose plan',
         buttonVariant: 'outline' as const,
@@ -75,7 +75,7 @@ function Billing() {
       {
         title: 'Scale',
         price: 179, // 10% discount applied
-        description: '$179 to spend in Apify Store or on your own Actors',
+        description: '$179 to spend in Tonfy Store or on your own Actors',
         features: ['$0.27 per compute unit', 'Priority chat'],
         buttonText: 'Choose plan',
         buttonVariant: 'default' as const,
@@ -85,7 +85,7 @@ function Billing() {
       {
         title: 'Business',
         price: 899, // 10% discount applied
-        description: '$899 to spend in Apify Store or on your own Actors',
+        description: '$899 to spend in Tonfy Store or on your own Actors',
         features: ['$0.225 per compute unit', 'Account manager'],
         buttonText: 'Choose plan',
         buttonVariant: 'outline' as const,
