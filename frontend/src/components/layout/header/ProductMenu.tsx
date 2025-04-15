@@ -15,18 +15,18 @@ interface IProps {
 
 export function ProductMenu({ items }: IProps) {
   return (
-    <div className="w-full shadow-lg md:w-[700px]">
-      <div className="container grid grid-cols-1 gap-2 p-6 md:grid-cols-2">
+    <div className="w-full">
+      <div className="container flex flex-col md:flex-row gap-1 p-4">
         {items.map((menue, idx) => (
-          <div key={idx} className="grid gap-0.5">
-            <Typography variant="h5" className="col-span-full">
+          <div key={idx} className="w-full md:min-w-[15rem]">
+            <Typography variant="h6" className="text-nowrap mb-4">
               {menue.title}
             </Typography>
             {menue.list.map((line) => (
               <Link
                 key={line.title}
                 href={line.href}
-                className="flex items-start gap-4 rounded-lg p-3 transition-colors hover:bg-muted"
+                className="flex items-start gap-4 rounded-lg p-2 transition-colors hover:bg-muted text-nowrap"
               >
                 {line.icon && (
                   <div className="rounded-md border p-2">

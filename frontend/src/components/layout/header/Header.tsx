@@ -12,7 +12,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { ProductMenu } from './ProductMenu';
-import { productItems, resources, solutions } from '../../../utils/constants';
+import { productItems, resources, solutions } from '@/utils/constants';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -20,6 +20,9 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '../../ui/navigation-menu';
+import Image from 'next/image';
+import fi from '@/assets/svg/fi.svg';
+import Logo from '../logo';
 
 const menuItems = [
   {
@@ -55,11 +58,11 @@ export function Header() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-sm">
       <div className="container flex h-14 items-center m-auto">
-        <div className="flex flex-1 items-center justify-between">
+        <div className="flex flex-1 items-center justify-between px-4">
           {/* Logo */}
           <div className="flex items-center space-x-4">
-            <Link href="/" className="flex items-center space-x-2">
-              <span className="font-bold">TONFY</span>
+            <Link href="/" className="flex items-end">
+              <Logo />
             </Link>
           </div>
           {/* Navigation */}
@@ -119,7 +122,7 @@ export function Header() {
             </DrawerTrigger>
             <DrawerContent className="h-[calc(100vh-56px)] -top-12">
               <div className="flex flex-col space-y-3 p-4 h-full">
-                <div className="space-y-3 flex-1">
+                <div className="space-y-2 flex-1">
                   {menuItems.map((item) => (
                     <div key={item.title}>
                       {item.children ? (
@@ -128,7 +131,10 @@ export function Header() {
                             {item.title}
                             <ArrowRight className="h-4 w-4" />
                           </SheetTrigger>
-                          <SheetContent side="right" className="w-full p-2">
+                          <SheetContent
+                            side="right"
+                            className="w-full overflow-auto p-2 pb-8 md:pb-2"
+                          >
                             <SheetTitle>{item.title}</SheetTitle>
                             {item.children}
                           </SheetContent>
