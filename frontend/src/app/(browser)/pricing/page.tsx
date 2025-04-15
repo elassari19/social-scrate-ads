@@ -56,7 +56,7 @@ export default function PricingPage() {
             },
             {
               value: 'free-trial',
-              question: 'Can I try Apify for free?',
+              question: 'Can I try Tonfy for free?',
               answer:
                 'Yes, you can start with our Free plan which gives you $5 in platform credits to explore our services. No credit card is required for the Free plan.',
             },
@@ -117,9 +117,9 @@ export default function PricingPage() {
             {
               value: 'discounts',
               question:
-                'Does Apify offer any discounts for universities or nonprofit organizations?',
+                'Does Tonfy offer any discounts for universities or nonprofit organizations?',
               answer:
-                'Yes, Apify offers special discounts for educational institutions and nonprofit organizations. Contact our sales team for more information on these discount programs.',
+                'Yes, Tonfy offers special discounts for educational institutions and nonprofit organizations. Contact our sales team for more information on these discount programs.',
             },
             {
               value: 'startup-pricing',
