@@ -10,6 +10,7 @@ import {
 import { Badge } from '../ui/badge';
 import { Check } from 'lucide-react';
 import { Button } from '../ui/button';
+import Link from 'next/link';
 
 interface PricingCardProps {
   title: string;
@@ -19,6 +20,7 @@ interface PricingCardProps {
   buttonText: string;
   buttonVariant?: 'default' | 'outline';
   popular?: boolean;
+  href: string;
   note?: string;
 }
 
@@ -30,6 +32,7 @@ export function PricingCard({
   buttonText,
   buttonVariant = 'default',
   popular,
+  href,
   note,
 }: PricingCardProps) {
   return (
@@ -63,7 +66,9 @@ export function PricingCard({
       </CardContent>
       <CardFooter className="flex flex-col items-start">
         <Button variant={buttonVariant} className="w-full">
-          {buttonText}
+          <Link href={href} className="w-full h-full">
+            {buttonText}
+          </Link>
         </Button>
         {note && <p className="text-xs text-muted-foreground mt-2">{note}</p>}
       </CardFooter>

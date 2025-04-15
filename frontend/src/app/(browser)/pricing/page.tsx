@@ -9,10 +9,11 @@ import {
 } from '@/components/ui/accordion';
 import { Typography } from '@/components/ui/Typography';
 import Billing from '@/components/sections/billing';
+import HowPricingWorks from '@/components/sections/how-pricing-works';
 
 export default function PricingPage() {
   return (
-    <div className="container mx-auto px-4 py-24 md:py-32 space-y-8">
+    <div className="container mx-auto px-4 py-24 md:py-32 space-y-16">
       {/* Page Title */}
       <div className="flex flex-col items-center justify-center text-center space-y-4">
         <Typography variant="h1">Flexible plan + pay as you go</Typography>
@@ -29,56 +30,7 @@ export default function PricingPage() {
       <Billing />
 
       {/* How Pricing Works */}
-      <div className="space-y-8">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl font-bold">How pricing works</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Pay only for what you use with our transparent pricing model.
-          </p>
-        </div>
-
-        <div className="bg-muted/40 p-8 rounded-lg max-w-4xl mx-auto">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-3 md:col-span-1 space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="bg-primary/10 text-primary p-2 rounded">🔍</div>
-                <span className="font-medium">Scraper pricing</span>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="outline">Instagram Scraper</Badge>
-                <Badge variant="outline">Google Maps Scraper</Badge>
-                <Badge variant="outline">TikTok Scraper</Badge>
-              </div>
-            </div>
-            <div className="col-span-3 md:col-span-2">
-              <div className="bg-white dark:bg-slate-900 rounded-lg p-4 shadow-sm">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-primary/10 rounded-lg p-2 text-center">
-                    <div className="font-semibold">21,000 results</div>
-                    <div className="text-sm text-muted-foreground">$49</div>
-                  </div>
-                  <div className="bg-primary/20 rounded-lg p-2 text-center">
-                    <div className="font-semibold">4,000 results</div>
-                    <div className="text-sm text-muted-foreground">
-                      Pay as you go
-                    </div>
-                    <div className="text-xs">Set your limit</div>
-                  </div>
-                </div>
-                <div className="mt-4 text-sm text-center">
-                  <div className="font-medium">
-                    $2.30 for 1,000 results - Pay per result
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    *Each Actor run is different. The above pricing breakdown is
-                    just an example.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <HowPricingWorks />
 
       {/* FAQ Section */}
       <div className="space-y-4 max-w-4xl mx-auto">

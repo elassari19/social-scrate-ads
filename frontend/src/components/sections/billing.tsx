@@ -20,6 +20,7 @@ function Billing() {
         features: ['$0.4 per compute unit', 'Community support'],
         buttonText: 'Start for free',
         buttonVariant: 'outline' as const,
+        href: '/signup',
         note: 'No credit card required.',
       },
       {
@@ -29,6 +30,7 @@ function Billing() {
         features: ['$0.4 per compute unit', 'Chat'],
         buttonText: 'Choose plan',
         buttonVariant: 'outline' as const,
+        href: '/signup',
       },
       {
         title: 'Scale',
@@ -38,6 +40,7 @@ function Billing() {
         buttonText: 'Choose plan',
         buttonVariant: 'default' as const,
         popular: true,
+        href: '/signup',
       },
       {
         title: 'Business',
@@ -46,6 +49,7 @@ function Billing() {
         features: ['$0.25 per compute unit', 'Account manager'],
         buttonText: 'Choose plan',
         buttonVariant: 'outline' as const,
+        href: '/signup',
       },
     ],
     annually: [
@@ -57,6 +61,7 @@ function Billing() {
         buttonText: 'Start for free',
         buttonVariant: 'outline' as const,
         note: 'No credit card required.',
+        href: '/signup',
       },
       {
         title: 'Starter',
@@ -65,6 +70,7 @@ function Billing() {
         features: ['$0.36 per compute unit', 'Chat'],
         buttonText: 'Choose plan',
         buttonVariant: 'outline' as const,
+        href: '/signup',
       },
       {
         title: 'Scale',
@@ -74,6 +80,7 @@ function Billing() {
         buttonText: 'Choose plan',
         buttonVariant: 'default' as const,
         popular: true,
+        href: '/signup',
       },
       {
         title: 'Business',
@@ -82,6 +89,7 @@ function Billing() {
         features: ['$0.225 per compute unit', 'Account manager'],
         buttonText: 'Choose plan',
         buttonVariant: 'outline' as const,
+        href: '/signup',
       },
     ],
   };
@@ -118,6 +126,7 @@ function Billing() {
             buttonText={plan.buttonText}
             buttonVariant={plan.buttonVariant}
             popular={plan.popular}
+            href={plan.href}
             note={plan.note}
           />
         ))}
