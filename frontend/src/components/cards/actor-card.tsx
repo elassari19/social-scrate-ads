@@ -21,7 +21,7 @@ interface IProps extends React.HTMLAttributes<HTMLDivElement> {
 const ActorCard = ({ actor, className }: IProps) => {
   return (
     <Link
-      href={`/actors/${actor.namespace}`}
+      href={`/actor/${actor.namespace}`}
       className={cn(
         'bg-white p-6 rounded-lg border border-gray-200 hover:border-gray-300 shadow-md hover:shadow-xl transition-shadow duration-200',
         className

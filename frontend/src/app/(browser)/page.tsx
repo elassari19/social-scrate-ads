@@ -11,6 +11,7 @@ import publishImage from '@/assets/home/publish.png';
 import soc2Image from '@/assets/home/soc2.png';
 import gdprImage from '@/assets/home/gdpr.png';
 import avatarImage from '@/assets/home/avatar.png';
+import Link from 'next/link';
 
 const actorCards = [
   {
@@ -97,7 +98,33 @@ const buildActor = {
 export default function Home() {
   return (
     <div className="flex flex-col items-center w-full bg-gray-50 py-10 md:py-20">
-      <HeroSection actors={actorCards} buildActor={buildActor} />
+      <HeroSection
+        heroHeader={
+          <>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              Your full-stack platform for web scraping
+            </h1>
+            <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+              Tonfy is the largest ecosystem where developers build, deploy, and
+              publish web scrapers, AI agents, and automation tools. We call
+              them Actors.
+            </p>
+          </>
+        }
+        actors={actorCards}
+        buildActor={buildActor}
+        heroFooter={
+          <div className="mt-10 text-center">
+            <Link
+              href="/store"
+              className="inline-flex items-center text-gray-700 hover:text-gray-900"
+            >
+              <span>Browse More Actors</span>
+              <span className="ml-1">→</span>
+            </Link>
+          </div>
+        }
+      />
 
       <FeatureSection
         scrapeImage={scrapeImage}
