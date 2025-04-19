@@ -11,6 +11,8 @@
 .env.development
 .env.test
 .env.production
+.gitignore
+bun.lockb
 
 # Build artifacts
 dist/
