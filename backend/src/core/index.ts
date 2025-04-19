@@ -25,6 +25,7 @@ export const createApp = async () => {
   const app = express();
   app.use(express.json());
   app.use(cookieParser());
+
   app.use(
     helmet({
       crossOriginEmbedderPolicy: false,
@@ -49,9 +50,19 @@ export const createApp = async () => {
   app.use(morgan('common'));
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: false }));
-  app.use(cors());
 
-  // Session middleware configuration
+  // CORS configuration - remove the previous app.use(cors()) call
+  app.use(
+    cors({
+      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+      exposedHeaders: ['set-cookie'],
+    })
+  );
+
+  // Add session middleware before passport
   app.use(redisSession);
 
   // Initialize Passport

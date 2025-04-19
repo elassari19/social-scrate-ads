@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { ArrowRight, Menu } from 'lucide-react';
 import Link from 'next/link';
+import { redirect, useRouter } from 'next/navigation';
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
-// Add this import at the top
 import {
   Sheet,
   SheetContent,
@@ -20,9 +20,16 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '../../ui/navigation-menu';
-import Image from 'next/image';
-import fi from '@/assets/svg/fi.svg';
 import Logo from '../logo';
+import { logout } from '../../../lib/auth';
+import {
+  Menubar,
+  MenubarMenu,
+  MenubarTrigger,
+  MenubarContent,
+  MenubarItem,
+  MenubarSeparator,
+} from '../../ui/menubar';
 
 const menuItems = [
   {
@@ -35,11 +42,6 @@ const menuItems = [
     href: '#',
     children: <ProductMenu items={solutions} />,
   },
-  // {
-  //   title: 'Developers',
-  //   href: '#',
-  //   children: <ProductMenu items={productItems} />,
-  // },
   {
     title: 'Resources',
     href: '#',
@@ -54,7 +56,150 @@ const menuItems = [
     href: 'contact-sales',
   },
 ];
+
 export function Header() {
+  const router = useRouter();
+  const [isClient, setIsClient] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [userData, setUserData] = React.useState({
+    email: '',
+    avatar: '',
+  });
+
+  React.useEffect(() => {
+    // This ensures we only run authentication check on the client side
+    setIsClient(true);
+
+    // Check for authentication status from session storage
+    const checkAuthStatus = async () => {
+      try {
+        // Use localStorage as a temporary source of truth for client-side
+        const authStatus = localStorage.getItem('isAuthenticated') === 'true';
+        const storedUserData = localStorage.getItem('userData');
+
+        setIsAuthenticated(authStatus);
+        if (storedUserData) {
+          setUserData(JSON.parse(storedUserData));
+        }
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Update client-side state
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('userData');
+      setIsAuthenticated(false);
+      setUserData({
+        email: '',
+        avatar: '',
+      });
+      // Redirect to home page
+      redirect('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  // Auth navigation items
+  const authItems =
+    isClient && isAuthenticated ? (
+      <div className="hidden md:flex md:items-center md:space-x-4">
+        <Menubar className="border-0 hover:bg-orange-50">
+          <MenubarMenu>
+            <MenubarTrigger>
+              <span className="text-sm font-medium text-muted-foreground pr-2">
+                {userData?.email.split('@')[0] || 'User'}
+              </span>
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium overflow-hidden">
+                {userData?.avatar ? (
+                  <img
+                    src={userData.avatar}
+                    alt="User avatar"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span>{userData?.email?.[0]?.toUpperCase() || 'U'}</span>
+                )}
+              </div>
+            </MenubarTrigger>
+            <MenubarContent align="end" alignOffset={-5}>
+              <MenubarItem asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </MenubarItem>
+              <MenubarItem asChild>
+                <Link href="/profile">Profile</Link>
+              </MenubarItem>
+              <MenubarItem asChild>
+                <Link href="/settings">Settings</Link>
+              </MenubarItem>
+              <MenubarSeparator />
+              <MenubarItem onClick={handleLogout}>Logout</MenubarItem>
+            </MenubarContent>
+          </MenubarMenu>
+        </Menubar>
+      </div>
+    ) : (
+      <div className="hidden md:flex md:items-center md:space-x-4">
+        <Link
+          href="/login"
+          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
+          Log in
+        </Link>
+        <Link
+          href="/signup"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          Get started
+        </Link>
+      </div>
+    );
+
+  // Update the mobile drawer menu
+  const mobileAuthItems =
+    isClient && isAuthenticated ? (
+      <>
+        <Link
+          href="/dashboard"
+          className="flex items-center justify-between py-2 text-sm font-medium"
+        >
+          Dashboard
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center justify-between py-2 text-sm font-medium cursor-pointer"
+        >
+          Logout
+          <ArrowRight className="h-4 w-4" />
+        </button>
+      </>
+    ) : (
+      <>
+        <Link
+          href="/signup"
+          className="mb-2 block w-full rounded-md bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground"
+        >
+          Get started
+        </Link>
+        <Link
+          href="/login"
+          className="block w-full rounded-md border px-4 py-2 text-center text-sm font-medium"
+        >
+          Log in
+        </Link>
+      </>
+    );
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-sm">
       <div className="container flex h-14 items-center m-auto">
@@ -94,21 +239,7 @@ export function Header() {
               </div>
             ))}
           </nav>
-          {/* auth */}
-          <div className="hidden md:flex md:items-center md:space-x-4">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/singup"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Get started
-            </Link>
-          </div>
+          {authItems}
         </div>
         <div className="lg:hidden">
           <Drawer>
@@ -151,20 +282,7 @@ export function Header() {
                     </div>
                   ))}
                 </div>
-                <div className="border-t pt-3">
-                  <Link
-                    href="/singup"
-                    className="mb-2 block w-full rounded-md bg-primary px-4 py-2 text-center text-sm font-medium text-primary-foreground"
-                  >
-                    Get started
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="block w-full rounded-md border px-4 py-2 text-center text-sm font-medium"
-                  >
-                    Log in
-                  </Link>
-                </div>
+                <div className="border-t pt-3">{mobileAuthItems}</div>
               </div>
             </DrawerContent>
           </Drawer>

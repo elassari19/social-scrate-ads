@@ -29,19 +29,37 @@ export class AuthController {
         return res.status(401).json({ message: info.message });
       }
       req.login(user, (err) => {
+        const { password, ...userWithoutPassword } = user;
         if (err) return next(err);
         return res.json({
-          id: user.id,
-          email: user.email,
-          name: user.name,
+          user: userWithoutPassword,
+          session: req.session,
+          message: 'Login successful',
         });
       });
     })(req, res, next);
   }
 
   static logout(req: Request, res: Response) {
-    req.logout(() => {
-      res.status(200).json({ message: 'Logged out successfully' });
+    req.logout((err) => {
+      if (err) {
+        console.log('Logout error:', err);
+        return res.status(500).json({ message: 'Logout failed' });
+      }
+      req.session.destroy((err) => {
+        if (err) {
+          console.log('Session destruction error:', err);
+          return res.status(500).json({ error: 'Session destruction failed' });
+        }
+        res.clearCookie('connect.sid', { path: '/' });
+        res.clearCookie('session', { path: '/' });
+        res.clearCookie('user', { path: '/' });
+        res.clearCookie('session.sig', { path: '/' });
+        res.clearCookie('user.sig', { path: '/' });
+
+        // Move this line inside the callback to ensure it runs after clearing cookies
+        return res.status(200).json({ message: 'Logged out successfully' });
+      });
     });
   }
 
