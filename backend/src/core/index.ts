@@ -23,6 +23,11 @@ import { createPuppeteerRoutes } from './puppeteer/puppeteer.routes';
 // Import GraphQL server
 import { createApolloServer } from './graphql/server';
 
+// Import Actor Service and Routes
+import { ActorService } from './actor/actor.service';
+import { ActorController } from './actor/actor.controller';
+import { createActorRoutes } from './actor/actor.routes';
+
 import { redisSession } from '../utils/redis.config';
 import { redisClient } from '../lib/redis';
 
@@ -80,11 +85,17 @@ export const createApp = async () => {
   const puppeteerController = new PuppeteerController(puppeteerService);
   const puppeteerRoutes = createPuppeteerRoutes(puppeteerController);
 
+  // Initialize Actor Service and Routes
+  const actorService = new ActorService(puppeteerService);
+  const actorController = new ActorController(actorService);
+  const actorRoutes = createActorRoutes(actorController);
+
   // Routes
   app.use('/auth', authRouter);
   app.use('/users', usersRouter);
   app.use('/subscription', subscriptionRoute);
   app.use('/puppeteer', puppeteerRoutes);
+  app.use('/actors', actorRoutes);
 
   // Initialize Apollo Server - await it properly
   await createApolloServer(app);

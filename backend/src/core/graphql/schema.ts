@@ -11,6 +11,7 @@ export const typeDefs = gql`
     adReports: [AdReport!]
     scrapingJobs: [ScrapingJob!]
     metrics: UserMetrics
+    actors: [Actor!]!
   }
 
   type AdReport {
@@ -90,16 +91,79 @@ export const typeDefs = gql`
     scrapingJobId: String!
   }
 
+  type Actor {
+    id: ID!
+    title: String!
+    namespace: String!
+    description: String!
+    stars: String!
+    rating: Float!
+    authorName: String!
+    authorBadgeColor: String!
+    icon: String!
+    iconBg: String!
+    script: String!
+    createdAt: String!
+    updatedAt: String!
+    user: User!
+    executions: [ActorExecution!]!
+  }
+
+  type ActorExecution {
+    id: ID!
+    status: String!
+    startTime: String!
+    endTime: String
+    results: JSON
+    logs: String
+    createdAt: String!
+    updatedAt: String!
+    actor: Actor!
+  }
+
   type Query {
     user(id: ID!): User
     users: [User!]!
     adReports(platform: String): [AdReport!]!
+    actors(userId: ID): [Actor!]!
+    actor(namespace: String!): Actor
+    actorExecutions(actorId: ID!, limit: Int): [ActorExecution!]!
   }
 
   type Mutation {
     updateUser(id: ID!, name: String!): User!
     createAdReport(platform: String!, adContent: String!): AdReport!
     generateAnalytics(reportId: ID!): Analytics!
+    createActor(
+      title: String!
+      namespace: String!
+      description: String!
+      stars: String!
+      rating: Float!
+      authorName: String!
+      authorBadgeColor: String!
+      icon: String!
+      iconBg: String!
+      script: String!
+    ): Actor!
+
+    updateActor(
+      id: ID!
+      title: String
+      namespace: String
+      description: String
+      stars: String
+      rating: Float
+      authorName: String
+      authorBadgeColor: String
+      icon: String
+      iconBg: String
+      script: String
+    ): Actor!
+
+    deleteActor(id: ID!): Boolean!
+
+    executeActor(id: ID!, url: String, options: JSON): ActorExecution!
   }
 
   type Analytics {
