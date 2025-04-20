@@ -355,3 +355,45 @@ export const mockActors = [
     badges: ['Social Media'],
   },
 ];
+
+export const developerTools = [
+  {
+    id: 1,
+    title: 'Cheerio Scraper',
+    namespace: 'apify/cheerio-scraper',
+    description:
+      'Crawls websites using raw HTTP requests, parses the HTML with the Cheerio library, and extracts data from the pages using a Node.js code.',
+    stars: '7.1k',
+    rating: 4.7,
+    authorName: 'Apify',
+    authorBadgeColor: 'blue',
+    icon: '🔶',
+    iconBg: 'bg-amber-100',
+  },
+  {
+    id: 2,
+    title: 'Web Scraper',
+    namespace: 'apify/web-scraper',
+    description:
+      'Crawls arbitrary websites using a web browser and extracts structured data from web pages using a provided JavaScript function. The Actor supports',
+    stars: '80k',
+    rating: 4.5,
+    authorName: 'Apify',
+    authorBadgeColor: 'blue',
+    icon: '🌐',
+    iconBg: 'bg-blue-100',
+  },
+  {
+    id: 3,
+    title: 'Puppeteer Scraper',
+    namespace: 'apify/puppeteer-scraper',
+    description:
+      'Crawls websites with the headless Chrome and Puppeteer library using a provided server-side Node.js code. This crawler is an alternative to',
+    stars: '6.1k',
+    rating: 5.0,
+    authorName: 'Apify',
+    authorBadgeColor: 'blue',
+    icon: '🤖',
+    iconBg: 'bg-cyan-100',
+  },
+];
