@@ -15,10 +15,16 @@ import usersRouter from './users/users.routes';
 import authRouter from './auth/auth.routes';
 import subscriptionRoute from './subscription/subscription.routes';
 
+// Import Puppeteer
+import { PuppeteerService } from './puppeteer/puppeteer.service';
+import { PuppeteerController } from './puppeteer/puppeteer.controller';
+import { createPuppeteerRoutes } from './puppeteer/puppeteer.routes';
+
 // Import GraphQL server
 import { createApolloServer } from './graphql/server';
 
 import { redisSession } from '../utils/redis.config';
+import { redisClient } from '../lib/redis';
 
 export const createApp = async () => {
   /* CONFIGURATIONS */
@@ -48,7 +54,7 @@ export const createApp = async () => {
   );
   app.use(helmet.crossOriginResourcePolicy({ policy: 'cross-origin' }));
   app.use(morgan('common'));
-  app.use(bodyParser.json());
+  app.use(bodyParser.json({ limit: '50mb' })); // Increased limit for screenshots
   app.use(bodyParser.urlencoded({ extended: false }));
 
   // CORS configuration - remove the previous app.use(cors()) call
@@ -69,10 +75,16 @@ export const createApp = async () => {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Initialize Puppeteer Service and Routes
+  const puppeteerService = new PuppeteerService(redisClient);
+  const puppeteerController = new PuppeteerController(puppeteerService);
+  const puppeteerRoutes = createPuppeteerRoutes(puppeteerController);
+
   // Routes
   app.use('/auth', authRouter);
   app.use('/users', usersRouter);
   app.use('/subscription', subscriptionRoute);
+  app.use('/puppeteer', puppeteerRoutes);
 
   // Initialize Apollo Server - await it properly
   await createApolloServer(app);
