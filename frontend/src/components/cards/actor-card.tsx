@@ -38,7 +38,9 @@ const ActorCard = ({ actor, className }: IProps) => {
           <p className="text-xs text-gray-500">{actor.namespace}</p>
         </div>
       </div>
-      <p className="text-sm text-gray-600 mb-4 h-12">{actor.description}</p>
+      <p className="text-sm text-gray-600 mb-4 line-clamp-3">
+        {actor.description}
+      </p>
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           <span
