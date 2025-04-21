@@ -13,6 +13,15 @@ export class ActorService {
     });
   }
 
+  async getActorById(id: string, userId?: string): Promise<Actor | null> {
+    return prisma.actor.findFirst({
+      where: {
+        id,
+        ...(userId ? { userId } : {}),
+      },
+    });
+  }
+
   async getActorByNamespace(namespace: string): Promise<Actor | null> {
     return prisma.actor.findUnique({
       where: { namespace },
@@ -26,6 +35,7 @@ export class ActorService {
     return prisma.actor.create({
       data: {
         ...actorData,
+        script: JSON.parse(JSON.stringify(actorData.script)),
         userId,
       },
     });
@@ -36,6 +46,7 @@ export class ActorService {
     actorData: Partial<Actor>,
     userId: string
   ): Promise<Actor> {
+    console.log('id', id, 'userId', userId);
     // First verify the actor belongs to the user
     const actor = await prisma.actor.findFirst({
       where: { id, userId },
@@ -49,7 +60,10 @@ export class ActorService {
 
     return prisma.actor.update({
       where: { id },
-      data: actorData,
+      data: {
+        ...actorData,
+        script: JSON.parse(JSON.stringify(actorData.script)),
+      },
     });
   }
 

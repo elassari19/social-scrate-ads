@@ -36,7 +36,7 @@ model Actor {
   authorBadgeColor String
   icon             String
   iconBg           String
-  script           String   // Puppeteer script for scraping
+  script           Json     // Puppeteer script for scraping
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   userId           String

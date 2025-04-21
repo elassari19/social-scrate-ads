@@ -98,8 +98,8 @@ export const createApp = async () => {
   app.use('/actors', actorRoutes);
 
   // Initialize Apollo Server - await it properly
-  await createApolloServer(app);
-  console.log('GraphQL server initialized');
+  // await createApolloServer(app);
+  // console.log('GraphQL server initialized');
 
   // Root route should be defined before error handlers
   app.get('/', (req, res) => {

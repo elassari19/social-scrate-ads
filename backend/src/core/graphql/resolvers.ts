@@ -1,5 +1,8 @@
 import { PrismaClient, User } from '@prisma/client';
 import { AuthenticationError } from 'apollo-server-express';
+import { PuppeteerService } from '../puppeteer/puppeteer.service';
+import { ActorService } from '../actor/actor.service';
+import { redisClient } from '../../lib/redis';
 
 const prisma = new PrismaClient();
 
@@ -178,7 +181,7 @@ export const resolvers = {
       if (!user) throw new AuthenticationError('Not authenticated');
 
       // Get the actor service
-      const puppeteerService = new PuppeteerService(redis);
+      const puppeteerService = new PuppeteerService(redisClient);
       const actorService = new ActorService(puppeteerService);
 
       return actorService.executeActor(id, url, options);
