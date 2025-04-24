@@ -17,7 +17,11 @@ export const createActorSchema = z.object({
   authorBadgeColor: z.string(),
   icon: z.string(),
   iconBg: z.string(),
-  script: z.any().refine((val) => val !== null, 'Puppeteer script is required'), // Changed to handle JSON
+  script: z.any().refine((val) => val !== null, 'Puppeteer script is required'),
+  prompt: z.string().optional(), // Main prompt for DeepSeek AI integration
+  prompts: z.record(z.string()).optional().default({}), // Additional prompts for AI analysis
+  tags: z.array(z.string()).optional().default([]),
+  dependencies: z.array(z.string()).optional().default([]),
 });
 
 // Schema for updating an actor
@@ -38,7 +42,17 @@ export const updateActorSchema = z.object({
   authorBadgeColor: z.string().optional(),
   icon: z.string().optional(),
   iconBg: z.string().optional(),
-  script: z.any().refine((val) => val !== null, 'Puppeteer script is required'), // Changed to handle JSON
+  script: z
+    .any()
+    .optional()
+    .refine(
+      (val) => val === undefined || val !== null,
+      'Puppeteer script cannot be null'
+    ),
+  prompt: z.string().optional(),
+  prompts: z.record(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  dependencies: z.array(z.string()).optional(),
 });
 
 // Schema for executing an actor
@@ -52,7 +66,19 @@ export const executeActorSchema = z.object({
   }),
 });
 
+// Schema for DeepSeek AI integration - updated to require only prompt
+export const deepSeekActorSchema = z.object({
+  params: z.object({
+    namespace: z.string().min(1, 'Actor namespace is required'),
+  }),
+  body: z.object({
+    prompt: z.string().min(1, 'Prompt is required'),
+    additionalContext: z.record(z.any()).optional(),
+  }),
+});
+
 // Custom type definitions based on the schemas
 export type CreateActorRequest = z.infer<typeof createActorSchema>;
 export type UpdateActorRequest = z.infer<typeof updateActorSchema>;
 export type ExecuteActorRequest = z.infer<typeof executeActorSchema>;
+export type DeepSeekActorRequest = z.infer<typeof deepSeekActorSchema>;

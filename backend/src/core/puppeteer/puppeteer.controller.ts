@@ -4,80 +4,57 @@ import { PuppeteerService } from './puppeteer.service';
 export class PuppeteerController {
   constructor(private puppeteerService: PuppeteerService) {}
 
-  // Scrape content from a webpage
-  scrapeContent = async (req: Request, res: Response): Promise<void> => {
+  // Process web content with user-provided prompt using DeepSeek AI
+  processWebContentWithDeepSeek = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
     try {
-      const { url, selectors } = req.body;
+      const {
+        url,
+        prompt,
+        customSelectors,
+        fullPageContent,
+        additionalContext,
+      } = req.body;
+      const userId = req.user?.id;
 
-      if (!url || !selectors) {
-        res.status(400).json({ error: 'URL and selectors are required' });
+      if (!url || !prompt) {
+        res.status(400).json({ error: 'URL and prompt are required' });
         return;
       }
 
-      const content = await this.puppeteerService.scrapeContent(url, selectors);
-      res.json(content);
-    } catch (error) {
-      console.error('Scraping error:', error);
-      res.status(500).json({ error: 'Failed to scrape content' });
-    }
-  };
+      // Log the user's request
+      console.log(
+        `User ${userId} requested web content analysis with DeepSeek AI: ${url}`
+      );
 
-  // Scrape social media ads (example specialized method)
-  scrapeSocialMediaAds = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { platform, query } = req.body;
+      // Process web content with DeepSeek AI
+      const result = await this.puppeteerService.processWebContentWithDeepSeek(
+        url,
+        prompt,
+        {
+          customSelectors,
+          fullPageContent,
+          additionalContext: {
+            ...additionalContext,
+            userId,
+          },
+        }
+      );
 
-      if (!platform) {
-        res.status(400).json({ error: 'Platform is required' });
-        return;
-      }
-
-      // Different selectors for different platforms
-      let url: string;
-      let selectors: Record<string, string>;
-
-      switch (platform.toLowerCase()) {
-        case 'facebook':
-          url = `https://www.facebook.com/ads/library/?active_status=all&ad_type=all&country=US&q=${encodeURIComponent(
-            query || ''
-          )}`;
-          selectors = {
-            adCount: '.x1xmf6yo',
-            adTexts: '.x1ywc1zp',
-          };
-          break;
-        case 'linkedin':
-          url = `https://www.linkedin.com/ads/search?keywords=${encodeURIComponent(
-            query || ''
-          )}`;
-          selectors = {
-            adCount: '.artdeco-pagination__indicator--number',
-            adItems: '.feed-shared-update-v2',
-          };
-          break;
-        case 'twitter':
-          url = `https://ads.twitter.com/transparency/search?q=${encodeURIComponent(
-            query || ''
-          )}`;
-          selectors = {
-            adCount: '.AdTransparency-count',
-            adItems: '.AdTransparency-item',
-          };
-          break;
-        default:
-          res.status(400).json({ error: 'Unsupported platform' });
-          return;
-      }
-
-      const content = await this.puppeteerService.scrapeContent(url, selectors);
       res.json({
-        platform,
-        query,
-        data: content,
+        url,
+        result,
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Social media scraping error:', error);
-      res.status(500).json({ error: 'Failed to scrape social media ads' });
+      console.error('Web content processing error:', error);
+
+      res.status(500).json({
+        error: 'Failed to process web content with DeepSeek AI',
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 }

@@ -1,82 +1,29 @@
-import puppeteer, { Browser, Page } from 'puppeteer-core';
+import { Page } from 'puppeteer-core';
 import { Redis } from 'ioredis';
+import { browserManager, BrowserManager } from './browser.config';
 
 export class PuppeteerService {
-  private browser: Browser | null = null;
-  private chromePath: string;
+  private deepSeekApiKey: string;
+  private browserManager: BrowserManager;
 
-  constructor(private redis: Redis, chromePath?: string) {
-    // Default Chrome paths based on operating system
-    // Users can also provide a custom path
-    this.chromePath = chromePath || this.getDefaultChromePath();
-  }
-
-  private getDefaultChromePath(): string {
-    // Default Chrome paths for different operating systems
-    switch (process.platform) {
-      case 'win32':
-        return 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-      case 'darwin':
-        return '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-      case 'linux':
-        return '/usr/bin/google-chrome';
-      default:
-        throw new Error(`Unsupported platform: ${process.platform}`);
-    }
-  }
-
-  async initBrowser(): Promise<Browser> {
-    if (this.browser) {
-      return this.browser;
-    }
-
-    try {
-      this.browser = await puppeteer.launch({
-        executablePath: this.chromePath,
-        headless: false,
-        args: [
-          '--disable-gpu',
-          '--disable-dev-shm-usage',
-          '--disable-setuid-sandbox',
-          '--no-sandbox',
-        ],
-      });
-
-      // Close browser on process exit
-      process.on('exit', () => {
-        if (this.browser) {
-          this.browser.close();
-        }
-      });
-
-      return this.browser;
-    } catch (error) {
-      console.error('Failed to launch browser:', error);
-      throw new Error('Failed to initialize browser');
-    }
+  constructor(
+    private redis: Redis,
+    deepSeekApiKey?: string,
+    customBrowserManager?: BrowserManager
+  ) {
+    this.deepSeekApiKey = deepSeekApiKey || process.env.DEEPSEEK_API_KEY || '';
+    this.browserManager = customBrowserManager || browserManager;
   }
 
   async createPage(): Promise<Page> {
-    const browser = await this.initBrowser();
-    const page = await browser.newPage();
-
-    // Set default viewport and user agent
-    await page.setViewport({ width: 1280, height: 800 });
-    await page.setUserAgent(
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
-    );
-
-    return page;
+    return this.browserManager.createPage();
   }
 
   async closeBrowser(): Promise<void> {
-    if (this.browser) {
-      await this.browser.close();
-      this.browser = null;
-    }
+    return this.browserManager.closeBrowser();
   }
 
-  // Basic scraping method
+  // Basic scraping method - needed for custom selectors
   async scrapeContent(
     url: string,
     selectors: Record<string, string>
@@ -115,5 +62,157 @@ export class PuppeteerService {
     } finally {
       await page.close();
     }
+  }
+
+  // Method to extract full page content
+  async getPageContent(url: string): Promise<string> {
+    const page = await this.createPage();
+
+    try {
+      // Check cache first
+      const cacheKey = `page-content:${url}`;
+      const cachedContent = await this.redis.get(cacheKey);
+
+      if (cachedContent) {
+        return cachedContent;
+      }
+
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+
+      // Extract the full page text content
+      const content = await page.evaluate(() => {
+        // Remove script and style elements to get only visible text
+        const scripts = document.querySelectorAll('script, style');
+        scripts.forEach((s) => s.remove());
+
+        return document.body.innerText;
+      });
+
+      // Cache the content for 30 minutes
+      await this.redis.set(cacheKey, content, 'EX', 1800);
+
+      return content;
+    } finally {
+      await page.close();
+    }
+  }
+
+  // Method to process web content with DeepSeek AI - our main functionality
+  async processWebContentWithDeepSeek(
+    url: string,
+    prompt: string,
+    options: {
+      customSelectors?: Record<string, string>;
+      fullPageContent?: boolean;
+      additionalContext?: Record<string, any>;
+    } = {}
+  ): Promise<any> {
+    if (!this.deepSeekApiKey) {
+      throw new Error('DeepSeek API key is not configured');
+    }
+
+    try {
+      // Get web content based on options
+      let webContent: string | Record<string, string>;
+
+      if (options.fullPageContent) {
+        // Get full page content
+        webContent = await this.getPageContent(url);
+      } else if (
+        options.customSelectors &&
+        Object.keys(options.customSelectors).length > 0
+      ) {
+        // Get content based on provided selectors
+        webContent = await this.scrapeContent(url, options.customSelectors);
+      } else {
+        // Default: get full page content
+        webContent = await this.getPageContent(url);
+      }
+
+      // Prepare context with web content and additional context
+      const context = {
+        url,
+        webContent,
+        ...options.additionalContext,
+      };
+
+      // Call DeepSeek API with the prompt and context
+      return this.callDeepSeekAPI(prompt, context);
+    } catch (error) {
+      console.error('Web content processing error:', error);
+      throw new Error(
+        `Failed to process web content: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  // Centralized method to call DeepSeek API
+  private async callDeepSeekAPI(
+    prompt: string,
+    context: Record<string, any>
+  ): Promise<any> {
+    // Cache key based on the prompt and context
+    const cacheKey = `deepseek:${Buffer.from(
+      JSON.stringify({ prompt, context })
+    ).toString('base64')}`;
+
+    // Check cache first
+    const cachedResult = await this.redis.get(cacheKey);
+    if (cachedResult) {
+      return JSON.parse(cachedResult);
+    }
+
+    // Call DeepSeek API
+    const response = await fetch(
+      'https://api.deepseek.com/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.deepSeekApiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are an expert web scraper assistant. Extract and organize the requested information accurately.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.2,
+          max_tokens: 5000,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `DeepSeek API error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const responseData = await response.json();
+    const result = responseData.choices[0].message.content;
+
+    // Try to parse the result as JSON if possible
+    let parsedResult;
+    try {
+      parsedResult = JSON.parse(result);
+    } catch (e) {
+      // If not valid JSON, use the text as is
+      parsedResult = { text: result };
+    }
+
+    // Cache the result for 30 minutes
+    await this.redis.set(cacheKey, JSON.stringify(parsedResult), 'EX', 1800);
+
+    return parsedResult;
   }
 }

@@ -5,7 +5,7 @@ interface UsePuppeteerOptions {
   onError?: (error: Error) => void;
 }
 
-export function usePuppeteer(options: UsePuppeteerOptions = {}) {
+export function usePuppeteer(hookOptions: UsePuppeteerOptions = {}) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -23,7 +23,7 @@ export function usePuppeteer(options: UsePuppeteerOptions = {}) {
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
-      options.onError?.(error);
+      hookOptions.onError?.(error);
       return null;
     } finally {
       setIsLoading(false);
@@ -44,7 +44,39 @@ export function usePuppeteer(options: UsePuppeteerOptions = {}) {
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
-      options.onError?.(error);
+      hookOptions.onError?.(error);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Use DeepSeek AI to scrape data based on actor script
+  const scrapeWithDeepSeekAI = async (
+    actorNamespace: string,
+    functionOptions?: {
+      location?: string;
+      jobs?: string[];
+      posts?: string[];
+      additionalContext?: Record<string, any>;
+    }
+  ) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = await puppeteerApi.scrapeWithDeepSeekAI({
+        actorNamespace,
+        location: functionOptions?.location,
+        jobs: functionOptions?.jobs,
+        posts: functionOptions?.posts,
+        additionalContext: functionOptions?.additionalContext,
+      });
+      return data;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Unknown error');
+      setError(error);
+      hookOptions.onError?.(error);
       return null;
     } finally {
       setIsLoading(false);
@@ -56,5 +88,6 @@ export function usePuppeteer(options: UsePuppeteerOptions = {}) {
     error,
     scrapeContent,
     scrapeSocialMediaAds,
+    scrapeWithDeepSeekAI,
   };
 }

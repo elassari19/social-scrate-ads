@@ -32,10 +32,26 @@ export class ActorService {
     actorData: Omit<Actor, 'id' | 'createdAt' | 'updatedAt'>,
     userId: string
   ): Promise<Actor> {
+    // Ensure script is a valid JSON object
+    const script = actorData.script || {};
+
+    // Ensure tags is an array
+    const tags = Array.isArray(actorData.tags) ? actorData.tags : [];
+
     return prisma.actor.create({
       data: {
-        ...actorData,
-        script: JSON.parse(JSON.stringify(actorData.script)),
+        title: actorData.title,
+        namespace: actorData.namespace,
+        description: actorData.description,
+        stars: actorData.stars,
+        rating: actorData.rating,
+        authorName: actorData.authorName,
+        authorBadgeColor: actorData.authorBadgeColor,
+        icon: actorData.icon,
+        iconBg: actorData.iconBg,
+        url: actorData.url,
+        tags,
+        script: JSON.parse(JSON.stringify(script)),
         userId,
       },
     });
@@ -46,7 +62,6 @@ export class ActorService {
     actorData: Partial<Actor>,
     userId: string
   ): Promise<Actor> {
-    console.log('id', id, 'userId', userId);
     // First verify the actor belongs to the user
     const actor = await prisma.actor.findFirst({
       where: { id, userId },
@@ -58,12 +73,22 @@ export class ActorService {
       );
     }
 
+    // Prepare the data for update
+    const updateData: any = { ...actorData };
+
+    // Only process script if it's provided
+    if (actorData.script) {
+      updateData.script = JSON.parse(JSON.stringify(actorData.script));
+    }
+
+    // Handle tags array if provided
+    if (actorData.tags !== undefined) {
+      updateData.tags = Array.isArray(actorData.tags) ? actorData.tags : [];
+    }
+
     return prisma.actor.update({
       where: { id },
-      data: {
-        ...actorData,
-        script: JSON.parse(JSON.stringify(actorData.script)),
-      },
+      data: updateData,
     });
   }
 
@@ -86,7 +111,6 @@ export class ActorService {
 
   async executeActor(
     actorId: string,
-    url?: string,
     options?: Record<string, any>
   ): Promise<any> {
     // Create an execution record
@@ -112,17 +136,13 @@ export class ActorService {
         data: { status: 'running' },
       });
 
-      // Execute the script using the puppeteer service
-      // We're evaluating the script string as JavaScript
-      // This requires careful validation and security measures in a production environment
-
       // Create a new browser page
       const page = await this.puppeteerService.createPage();
 
       try {
-        // If URL is provided, navigate to it
-        if (url) {
-          await page.goto(url, { waitUntil: 'domcontentloaded' });
+        // Navigate to the actor's predefined URL
+        if (actor.url) {
+          await page.goto(actor.url, { waitUntil: 'domcontentloaded' });
         }
 
         // Execute the script
@@ -158,6 +178,92 @@ export class ActorService {
         // Always close the page
         await page.close();
       }
+    } catch (error) {
+      // Update execution record with error
+      await prisma.actorExecution.update({
+        where: { id: execution.id },
+        data: {
+          status: 'failed',
+          endTime: new Date(),
+          logs: error instanceof Error ? error.message : String(error),
+        },
+      });
+
+      throw error;
+    }
+  }
+
+  // Execute actor with web content processing via DeepSeek
+  async executeActorWithDeepSeek(
+    namespace: string,
+    context: Record<string, any>
+  ): Promise<any> {
+    // Get the actor by namespace
+    const actor = await this.getActorByNamespace(namespace);
+
+    if (!actor) {
+      throw new Error(`Actor with namespace "${namespace}" not found`);
+    }
+
+    // Create an execution record
+    const execution = await prisma.actorExecution.create({
+      data: {
+        status: 'pending',
+        actorId: actor.id,
+      },
+    });
+
+    try {
+      // Update status to running
+      await prisma.actorExecution.update({
+        where: { id: execution.id },
+        data: { status: 'running' },
+      });
+
+      // Get the URL from the actor model
+      const url = actor.url;
+
+      if (!url) {
+        throw new Error(`Actor "${namespace}" does not have a URL configured`);
+      }
+
+      // Get the prompt from the user context
+      const prompt = context.userPrompt;
+
+      if (!prompt) {
+        throw new Error('A prompt is required to process the web content');
+      }
+
+      // Process with DeepSeek AI using the actor's URL
+      const result = await this.puppeteerService.processWebContentWithDeepSeek(
+        url,
+        prompt,
+        {
+          additionalContext: context,
+        }
+      );
+
+      // Update execution record with results
+      const completedExecution = await prisma.actorExecution.update({
+        where: { id: execution.id },
+        data: {
+          status: 'completed',
+          endTime: new Date(),
+          results: result || {},
+        },
+      });
+
+      return {
+        actor: {
+          id: actor.id,
+          name: actor.title,
+          namespace: actor.namespace,
+          url: actor.url,
+        },
+        executionId: execution.id,
+        context,
+        result,
+      };
     } catch (error) {
       // Update execution record with error
       await prisma.actorExecution.update({

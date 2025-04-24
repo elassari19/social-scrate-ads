@@ -118,13 +118,48 @@ export class ActorController {
   executeActor = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const { url, options } = req.body;
+      const { options } = req.body;
 
-      const result = await this.actorService.executeActor(id, url, options);
+      // We no longer need the URL from the request body, as we'll use the one stored in the actor model
+      const result = await this.actorService.executeActor(id, options);
       res.json(result);
     } catch (error) {
       console.error('Error executing actor:', error);
       res.status(500).json({ error: 'Failed to execute actor' });
+    }
+  };
+
+  executeActorWithDeepSeek = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const { namespace } = req.params;
+      const { prompt, additionalContext } = req.body;
+
+      if (!prompt) {
+        res.status(400).json({ error: 'Prompt is required' });
+        return;
+      }
+
+      // Create context object with prompt and any additional parameters
+      const context: Record<string, any> = {
+        userPrompt: prompt,
+        ...(additionalContext || {}),
+      };
+
+      const result = await this.actorService.executeActorWithDeepSeek(
+        namespace,
+        context
+      );
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error executing actor with DeepSeek:', error);
+      res.status(500).json({
+        error: 'Failed to execute actor with DeepSeek AI',
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 

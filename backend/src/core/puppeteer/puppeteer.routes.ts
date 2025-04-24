@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { PuppeteerController } from './puppeteer.controller';
 import { cacheMiddleware } from '../cache/cache.middleware';
 import { isAuthenticated } from '../auth/auth.middleware';
+import { validate } from '../middleware/validation.middleware';
+import { webContentDeepSeekSchema } from './puppeteer.schema';
 
 export function createPuppeteerRoutes(
   puppeteerController: PuppeteerController
@@ -11,18 +13,12 @@ export function createPuppeteerRoutes(
   // Apply authentication middleware to all routes
   router.use(isAuthenticated);
 
-  // General scraping endpoint
+  // Single endpoint for web content processing with DeepSeek AI and user prompts
   router.post(
     '/scrape',
-    cacheMiddleware(3600), // Cache for 1 hour
-    puppeteerController.scrapeContent
-  );
-
-  // Specialized social media ads scraping endpoint
-  router.post(
-    '/social-ads',
+    validate(webContentDeepSeekSchema),
     cacheMiddleware(1800), // Cache for 30 minutes
-    puppeteerController.scrapeSocialMediaAds
+    puppeteerController.processWebContentWithDeepSeek
   );
 
   return router;

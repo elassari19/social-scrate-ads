@@ -6,6 +6,7 @@ import {
   createActorSchema,
   updateActorSchema,
   executeActorSchema,
+  deepSeekActorSchema,
 } from './actor.schema';
 import { isAuthenticated } from '../auth/auth.middleware';
 
@@ -43,6 +44,13 @@ export function createActorRoutes(actorController: ActorController): Router {
     '/:id/execute',
     validate(executeActorSchema),
     actorController.executeActor
+  );
+
+  // Execute actor with DeepSeek AI
+  router.post(
+    '/namespace/:namespace/deepseek',
+    validate(deepSeekActorSchema),
+    actorController.executeActorWithDeepSeek
   );
 
   // Get actor executions

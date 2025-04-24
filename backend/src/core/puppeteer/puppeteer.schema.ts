@@ -1,24 +1,14 @@
 import { z } from 'zod';
 
-// Schema for screenshot endpoint
-export const screenshotSchema = z.object({
+// Schema for web content processing with DeepSeek AI
+export const webContentDeepSeekSchema = z.object({
   url: z.string().url(),
-  selector: z.string().optional(),
+  prompt: z.string(),
+  customSelectors: z.record(z.string()).optional(),
+  fullPageContent: z.boolean().optional().default(false),
+  additionalContext: z.record(z.any()).optional(),
 });
 
-// Schema for scrape content endpoint
-export const scrapeContentSchema = z.object({
-  url: z.string().url(),
-  selectors: z.record(z.string()),
-});
-
-// Schema for social media ads endpoint
-export const socialMediaAdsSchema = z.object({
-  platform: z.enum(['facebook', 'twitter', 'linkedin', 'instagram']),
-  query: z.string().optional(),
-});
-
-// Custom type definitions based on the schemas
-export type ScreenshotRequest = z.infer<typeof screenshotSchema>;
-export type ScrapeContentRequest = z.infer<typeof scrapeContentSchema>;
-export type SocialMediaAdsRequest = z.infer<typeof socialMediaAdsSchema>;
+export type WebContentDeepSeekRequest = z.infer<
+  typeof webContentDeepSeekSchema
+>;

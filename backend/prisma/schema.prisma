@@ -36,6 +36,8 @@ model Actor {
   authorBadgeColor String
   icon             String
   iconBg           String
+  url              String
+  tags             String[]
   script           Json     // Puppeteer script for scraping
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
