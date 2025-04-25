@@ -215,4 +215,140 @@ export class PuppeteerService {
 
     return parsedResult;
   }
+
+  // Helper method to generate content from DeepSeek AI
+  private async generateFromDeepSeek<T>(
+    actorType: string,
+    prompt: string,
+    specializiedPrompt: string,
+    additionalContext?: Record<string, any>
+  ): Promise<T> {
+    if (!this.deepSeekApiKey) {
+      throw new Error('DeepSeek API key is not configured');
+    }
+
+    // Create context for DeepSeek API
+    const context = {
+      actorType,
+      prompt,
+      ...additionalContext,
+    };
+
+    // Call DeepSeek API
+    const result = await this.callDeepSeekAPI(specializiedPrompt, context);
+    return result as T;
+  }
+
+  // Generate URL and selectors from DeepSeek
+  async generateUrlAndSelectors(
+    actorType: string,
+    prompt: string,
+    additionalContext?: Record<string, any>
+  ): Promise<{
+    url: string;
+    selectors: Record<string, string>;
+    pagination?: { nextPageSelector?: string; maxPages: number };
+  }> {
+    // Specialized prompt for DeepSeek to generate URL and selectors
+    const specializiedPrompt = `
+      Based on the actor type "${actorType}" and user prompt "${prompt}", 
+      generate a URL to scrape and a set of CSS selectors to extract relevant data.
+      
+      Instructions:
+      1. Analyze the user's prompt and determine what data needs to be extracted
+      2. Create a valid URL for the ${actorType} platform that would contain this data
+      3. Define CSS selectors that can extract the required information
+
+      Return ONLY a JSON object with the following structure:
+      {
+        "url": "full URL to navigate to",
+        "selectors": {
+          "key1": "selector1",
+          "key2": "selector2",
+          // Add as many selectors as needed
+        },
+        "pagination": {
+          "nextPageSelector": "selector for next page button if applicable",
+          "maxPages": number of pages to scrape (default: 1)
+        }
+      }
+    `;
+
+    const result = await this.generateFromDeepSeek<{
+      url: string;
+      selectors: Record<string, string>;
+      pagination?: { nextPageSelector?: string; maxPages: number };
+    }>(actorType, prompt, specializiedPrompt, additionalContext);
+
+    // Validate the response
+    if (!result.url || !result.selectors) {
+      throw new Error('DeepSeek failed to generate valid URL and selectors');
+    }
+
+    return {
+      url: result.url,
+      selectors: result.selectors,
+      pagination: result.pagination || { maxPages: 1 },
+    };
+  }
+
+  // Generate URL and puppeteer script from DeepSeek
+  async generateUrlAndScript(
+    actorType: string,
+    prompt: string,
+    additionalContext?: Record<string, any>
+  ): Promise<{
+    url: string;
+    script: string;
+    selectors: Record<string, string>;
+    pagination?: any;
+  }> {
+    // Specialized prompt for DeepSeek to generate URL and puppeteer script
+    const specializiedPrompt = `
+      Based on the actor type "${actorType}" (e.g., LinkedIn, Facebook, Twitter, etc.) and user prompt "${prompt}", 
+      generate a URL to scrape and a Puppeteer script to extract relevant data.
+      
+      Instructions:
+      1. Analyze the user's prompt to determine what data needs to be extracted
+      2. Create a valid URL for the ${actorType} platform that would contain this data
+      3. Define CSS selectors that can extract the required information
+      4. Create a script that ONLY contains selectors and pagination logic (no browser initialization or other configuration)
+      
+      Return ONLY a JSON object with the following structure:
+      {
+        "url": "full URL to navigate to",
+        "selectors": {
+          "key1": "selector1",
+          "key2": "selector2",
+          // Add as many selectors as needed
+        },
+        "pagination": {
+          "nextPageSelector": "selector for next page button if applicable",
+          "maxPages": number of pages to scrape (default: 1)
+        },
+        "script": "// Puppeteer script that uses page object to scrape data\\nconst data = {};\\n// Define selectors and extraction logic here\\n// Example: data.titles = await page.$$eval('.title', els => els.map(el => el.textContent.trim()));"
+      }
+    `;
+
+    const result = await this.generateFromDeepSeek<{
+      url: string;
+      script: string;
+      selectors: Record<string, string>;
+      pagination?: { nextPageSelector?: string; maxPages: number };
+    }>(actorType, prompt, specializiedPrompt, additionalContext);
+
+    // Validate the response
+    if (!result.url || !result.script || !result.selectors) {
+      throw new Error(
+        'DeepSeek failed to generate valid URL and scraping script'
+      );
+    }
+
+    return {
+      url: result.url,
+      script: result.script,
+      selectors: result.selectors,
+      pagination: result.pagination || { maxPages: 1 },
+    };
+  }
 }

@@ -220,13 +220,6 @@ export class ActorService {
         data: { status: 'running' },
       });
 
-      // Get the URL from the actor model
-      const url = actor.url;
-
-      if (!url) {
-        throw new Error(`Actor "${namespace}" does not have a URL configured`);
-      }
-
       // Get the prompt from the user context
       const prompt = context.userPrompt;
 
@@ -234,12 +227,52 @@ export class ActorService {
         throw new Error('A prompt is required to process the web content');
       }
 
-      // Process with DeepSeek AI using the actor's URL
+      // STEP 1: Generate URL and Puppeteer script from DeepSeek based on actor type and prompt
+      const { url, script, selectors, pagination } =
+        await this.puppeteerService.generateUrlAndScript(
+          actor.namespace, // Using namespace as actor type (e.g., "linkedin", "facebook")
+          prompt,
+          context
+        );
+
+      console.log(`Generated URL for ${actor.namespace}: ${url}`);
+      console.log(
+        `Generated script for ${actor.namespace}: ${script.substring(
+          0,
+          100
+        )}...`
+      );
+
+      // STEP 2: Use Puppeteer to navigate to the URL and execute the generated script
+      const page = await this.puppeteerService.createPage();
+      let scrapedData: Record<string, any> = {};
+
+      try {
+        // Navigate to the generated URL
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+
+        // Execute the script with pagination support
+        scrapedData = await this.executeScriptWithPagination(
+          page,
+          script,
+          pagination
+        );
+      } finally {
+        // Always close the page
+        await page.close();
+      }
+
+      // STEP 3: Process the scraped content with DeepSeek AI using the user's original prompt
       const result = await this.puppeteerService.processWebContentWithDeepSeek(
         url,
         prompt,
         {
-          additionalContext: context,
+          additionalContext: {
+            ...context,
+            scrapedContent: scrapedData,
+            originalUrl: url,
+            selectors,
+          },
         }
       );
 
@@ -258,10 +291,13 @@ export class ActorService {
           id: actor.id,
           name: actor.title,
           namespace: actor.namespace,
-          url: actor.url,
+          url, // Return the generated URL, not the actor.url
         },
         executionId: execution.id,
         context,
+        scrapedData,
+        selectors,
+        generatedScript: script,
         result,
       };
     } catch (error) {
@@ -277,6 +313,103 @@ export class ActorService {
 
       throw error;
     }
+  }
+
+  // Helper method to execute script in a page with pagination support
+  private async executeScriptWithPagination(
+    page: any,
+    script: string,
+    pagination?: { nextPageSelector?: string; maxPages?: number }
+  ): Promise<Record<string, any>> {
+    // Wrap the script to provide proper error handling and data return
+    const scriptWithWrapping = `
+      (async () => {
+        try {
+          ${script}
+          return data || {}; // Return the data object that the script is expected to populate
+        } catch (error) {
+          console.error("Script execution error:", error);
+          return { error: error.message };
+        }
+      })()
+    `;
+
+    // Execute the script on the current page
+    let scrapedData = (await page.evaluate(scriptWithWrapping)) as Record<
+      string,
+      any
+    >;
+
+    // If pagination is enabled and we have a next page selector
+    if (
+      pagination?.nextPageSelector &&
+      pagination.maxPages &&
+      pagination.maxPages > 1
+    ) {
+      let currentPage = 1;
+
+      while (currentPage < pagination.maxPages) {
+        // Check if next page button exists and is visible
+        const hasNextPage = await page.evaluate((nextPageSelector: string) => {
+          const nextButton = document.querySelector(nextPageSelector);
+          // Need to cast to HTMLElement to access offsetParent
+          return (
+            nextButton && (nextButton as HTMLElement).offsetParent !== null
+          );
+        }, pagination.nextPageSelector);
+
+        if (!hasNextPage) break;
+
+        // Click next page and wait for navigation
+        await Promise.all([
+          page.waitForNavigation({ waitUntil: 'networkidle2' }),
+          page.click(pagination.nextPageSelector),
+        ]);
+
+        // Execute the script on the new page
+        const newPageData = await page.evaluate(scriptWithWrapping);
+
+        // Merge the new data with the existing data
+        scrapedData = this.mergePageData(scrapedData, newPageData);
+
+        currentPage++;
+      }
+    }
+
+    return scrapedData;
+  }
+
+  // Helper function to merge data from multiple pages
+  private mergePageData(existingData: any, newData: any): any {
+    const merged = { ...existingData };
+
+    // Loop through the properties of the new data
+    for (const [key, value] of Object.entries(newData)) {
+      // If the property doesn't exist in the merged object, add it
+      if (!merged[key]) {
+        merged[key] = value;
+        continue;
+      }
+
+      // If both values are arrays, concatenate them
+      if (Array.isArray(merged[key]) && Array.isArray(value)) {
+        merged[key] = [...merged[key], ...value];
+      }
+      // If existing value is an array but new value is not, push the new value
+      else if (Array.isArray(merged[key])) {
+        merged[key].push(value);
+      }
+      // If new value is an array but existing value is not, create a new array with both
+      else if (Array.isArray(value)) {
+        merged[key] = [merged[key], ...value];
+      }
+      // If neither is an array, create a new array with both values
+      else {
+        merged[key] = [merged[key], value];
+      }
+    }
+
+    return merged;
   }
 
   async getActorExecutions(actorId: string, limit = 10): Promise<any[]> {
