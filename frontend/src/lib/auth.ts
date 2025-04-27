@@ -4,7 +4,7 @@ import axios from 'axios';
 import { cookies } from 'next/headers';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-const SESSION_COOKIE_NAME = 'session_token';
+const SESSION_COOKIE_NAME = 'connect.sid'; // Match the actual cookie name from your backend
 const USER_COOKIE_NAME = 'user_data';
 
 interface LoginCredentials {
@@ -20,32 +20,27 @@ export async function login(credentials: LoginCredentials) {
   try {
     const response = await axios.post(`${API_URL}/auth/login`, credentials, {
       withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      }
     });
 
-    if (response.statusText !== 'OK') {
+    if (response.status !== 200) {
       return { error: 'Login failed' };
     }
 
-    // Extract the user and session data correctly
+    // Extract the user data correctly
     const userData = response.data.user || response.data;
-    const sessionToken = response.data.session || response.data.token || '';
+    
+    // No need to manually set cookies here - the backend should set them
+    // with the proper HttpOnly and secure flags
 
-    // Set cookies directly using Next.js cookies API
-    (await cookies()).set(SESSION_COOKIE_NAME, sessionToken, {
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
-
-    (await cookies()).set(USER_COOKIE_NAME, JSON.stringify(userData), {
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
-
-    return { ...response.data, success: true };
+    return { 
+      user: userData, 
+      success: true,
+      session: response.data.session || null
+    };
   } catch (error) {
     console.error('Login error:', error);
     return { error: 'Login failed. Please check your credentials.' };

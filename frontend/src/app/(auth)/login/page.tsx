@@ -1,8 +1,18 @@
-import { Loader2 } from 'lucide-react';
 import LoginForm from '@/components/auth/login-form';
 import { Typography } from '@/components/ui/Typography';
+import { isAuthenticated } from '@/lib/cookies';
+import { redirect } from 'next/navigation';
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  // Check if user is already authenticated
+  const authenticated = await isAuthenticated();
+
+  // If authenticated, redirect to home page
+  if (authenticated) {
+    redirect('/');
+  }
+
+  // Otherwise, show login form
   return (
     <>
       <div className="container relative flex-col items-center justify-center h-[calc(100vh-4rem)] grid lg:max-w-none lg:grid-cols-2 lg:px-0">

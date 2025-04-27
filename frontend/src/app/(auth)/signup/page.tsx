@@ -1,7 +1,16 @@
 import SignUpForm from '@/components/auth/signup-form';
 import { Typography } from '@/components/ui/Typography';
+import { redirect } from 'next/navigation';
+import { isAuthenticated } from '@/lib/cookies';
 
-export default function SignupPage() {
+export default async function SignupPage() {
+  // Check if user is already authenticated
+  const authenticated = await isAuthenticated();
+
+  // If authenticated, redirect to home page
+  if (authenticated) {
+    redirect('/');
+  }
   return (
     <div className="container relative flex-col items-center justify-center h-[calc(100vh-4rem)] grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       <div className="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">

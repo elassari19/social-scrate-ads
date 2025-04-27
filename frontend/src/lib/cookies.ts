@@ -2,16 +2,16 @@
 
 import { cookies } from 'next/headers';
 
-// Cookie constants - exporting for direct usage
-export const SESSION_COOKIE_NAME = 'session_token';
-export const USER_COOKIE_NAME = 'user_data';
+// Cookie constants - not exported
+const SESSION_COOKIE_NAME = 'connect.sid';
+const USER_COOKIE_NAME = 'user_data';
 
-// Default cookie options
-export const defaultCookieOptions = {
+// Default cookie options - not exported directly
+const defaultCookieOptions = {
   maxAge: 7 * 24 * 60 * 60, // 7 days
   path: '/',
   secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict',
+  sameSite: 'strict' as const,
 };
 
 /**
@@ -19,8 +19,16 @@ export const defaultCookieOptions = {
  */
 export async function setCookie(key: string, value: string, options = {}) {
   (await cookies()).set(key, value, {
+    ...defaultCookieOptions,
     ...options,
   });
+}
+
+/**
+ * Get cookie options (if needed from client components)
+ */
+export async function getCookieOptions() {
+  return { ...defaultCookieOptions };
 }
 
 /**
@@ -83,8 +91,14 @@ export async function getUserData() {
  * Check if user is authenticated based on cookies
  */
 export async function isAuthenticated() {
+  // Check both server cookie and client localStorage
   const token = await getCookie(SESSION_COOKIE_NAME);
-  return !!token;
+
+  // We can also check for user data cookie as a fallback
+  const userData = await getUserData();
+
+  // Return true if either the session token or user data exists
+  return !!token || !!userData;
 }
 
 /**

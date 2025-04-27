@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ import { login } from '../../lib/auth';
 
 export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -26,6 +27,7 @@ export default function LoginForm() {
       if (response.error) {
         console.log('Login failed:', response);
         toast.error(response.error);
+        setIsLoading(false);
         return;
       }
 
@@ -39,11 +41,13 @@ export default function LoginForm() {
 
       toast.success('Login successful!');
 
-      redirect('/');
+      // Use router.push instead of redirect for client components
+      setTimeout(() => {
+        router.push('/');
+      }, 500);
     } catch (error) {
       toast.error('Invalid email or password');
       console.error('Login error:', error);
-    } finally {
       setIsLoading(false);
     }
   }
