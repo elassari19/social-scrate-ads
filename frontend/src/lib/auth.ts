@@ -22,8 +22,8 @@ export async function login(credentials: LoginCredentials) {
       withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      }
+        Accept: 'application/json',
+      },
     });
 
     if (response.status !== 200) {
@@ -32,14 +32,37 @@ export async function login(credentials: LoginCredentials) {
 
     // Extract the user data correctly
     const userData = response.data.user || response.data;
-    
-    // No need to manually set cookies here - the backend should set them
-    // with the proper HttpOnly and secure flags
 
-    return { 
-      user: userData, 
+    // Forward the cookie from the response to the client
+    const setCookieHeader = response.headers['set-cookie'];
+    if (setCookieHeader) {
+      // Store session token in cookie
+      const sessionCookie = setCookieHeader.find((cookie) =>
+        cookie.includes(SESSION_COOKIE_NAME)
+      );
+      if (sessionCookie) {
+        const cookieValue = sessionCookie.split(';')[0].split('=')[1];
+        (await cookies()).set(SESSION_COOKIE_NAME, cookieValue, {
+          path: '/',
+          httpOnly: false, // Allow client-side access
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+        });
+      }
+    }
+
+    // Store user data in a cookie for easier access
+    (await cookies()).set(USER_COOKIE_NAME, JSON.stringify(userData), {
+      path: '/',
+      httpOnly: false, // Allow client-side access
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
+    return {
+      user: userData,
       success: true,
-      session: response.data.session || null
+      session: response.data.session || null,
     };
   } catch (error) {
     console.error('Login error:', error);
@@ -48,15 +71,39 @@ export async function login(credentials: LoginCredentials) {
 }
 
 export async function signup(credentials: SignupCredentials) {
-  const response = await axios.post(`${API_URL}/auth/register`, credentials, {
-    withCredentials: true,
-  });
+  try {
+    const response = await axios.post(`${API_URL}/auth/register`, credentials, {
+      withCredentials: true,
+    });
 
-  if (!response.data.success) {
-    throw new Error('Signup failed');
+    // Similar cookie handling as in the login function
+    const setCookieHeader = response.headers['set-cookie'];
+    if (setCookieHeader) {
+      const sessionCookie = setCookieHeader.find((cookie) =>
+        cookie.includes(SESSION_COOKIE_NAME)
+      );
+      if (sessionCookie) {
+        const cookieValue = sessionCookie.split(';')[0].split('=')[1];
+        (await cookies()).set(SESSION_COOKIE_NAME, cookieValue, {
+          path: '/',
+          httpOnly: false,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+        });
+      }
+    }
+
+    return {
+      success: true,
+      user: response.data,
+    };
+  } catch (error: any) {
+    console.error('Signup error:', error);
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Signup failed',
+    };
   }
-
-  return response.data;
 }
 
 export async function logout() {
@@ -82,15 +129,38 @@ export async function logout() {
 }
 
 export async function getCurrentUser() {
-  const response = await axios.get(`${API_URL}/auth/me`, {
-    withCredentials: true,
-  });
+  try {
+    // Get authentication cookie
+    const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME);
 
-  if (!response.data.success) {
-    throw new Error('Failed to fetch user data');
+    // Only make the request if we have a session cookie
+    if (!sessionCookie?.value) {
+      return null;
+    }
+
+    const response = await axios.get(`${API_URL}/auth/me`, {
+      withCredentials: true,
+      headers: {
+        Cookie: `${SESSION_COOKIE_NAME}=${sessionCookie.value}`,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return null;
   }
+}
 
-  return response.data.user || response.data;
+// Helper function to get auth headers for API calls
+export async function getAuthHeaders() {
+  const sessionCookie = (await cookies()).get(SESSION_COOKIE_NAME);
+  if (sessionCookie?.value) {
+    return {
+      Cookie: `${SESSION_COOKIE_NAME}=${sessionCookie.value}`,
+    };
+  }
+  return {};
 }
 
 export async function getSession() {
@@ -106,6 +176,5 @@ export async function getSession() {
     }
   }
 
-  console.log('Session:', sessionCookie?.value);
   return userData;
 }

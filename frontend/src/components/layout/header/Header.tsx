@@ -68,6 +68,7 @@ export function Header() {
     // Check if user is authenticated
     const user = await getUserData();
     if (user) {
+      console.log('User data:', user);
       setUserData(user);
     }
   };
