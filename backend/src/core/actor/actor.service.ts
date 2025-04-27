@@ -1,4 +1,4 @@
-import { Actor, PrismaClient } from '@prisma/client';
+import { Actor, PrismaClient, Prisma } from '@prisma/client';
 import { PuppeteerService } from '../puppeteer/puppeteer.service';
 
 const prisma = new PrismaClient();
@@ -6,10 +6,42 @@ const prisma = new PrismaClient();
 export class ActorService {
   constructor(private puppeteerService: PuppeteerService) {}
 
-  async getAllActors(userId?: string): Promise<Actor[]> {
+  async getAllActors(
+    userId?: string,
+    take?: number,
+    page?: number,
+    search?: string,
+    category?: string
+  ): Promise<Actor[]> {
+    // Build where clause for filtering
+    const where: Prisma.ActorWhereInput = {};
+
+    // Filter by user if provided
+    if (userId) {
+      where.userId = userId;
+    }
+
+    // Filter by search term if provided
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { namespace: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Filter by category if provided
+    if (category) {
+      where.tags = {
+        hasSome: [category],
+      };
+    }
+
     return prisma.actor.findMany({
-      where: userId ? { userId } : undefined,
+      where,
       orderBy: { createdAt: 'desc' },
+      take: take || 15,
+      skip: page ? (page - 1) * (take || 15) : 0,
     });
   }
 

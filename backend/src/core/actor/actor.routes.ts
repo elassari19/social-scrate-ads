@@ -13,9 +13,6 @@ import { isAuthenticated } from '../auth/auth.middleware';
 export function createActorRoutes(actorController: ActorController): Router {
   const router = Router();
 
-  // Apply authentication middleware to all routes
-  router.use(isAuthenticated);
-
   // Get all actors (with optional user filtering)
   router.get(
     '/',
@@ -29,6 +26,9 @@ export function createActorRoutes(actorController: ActorController): Router {
     cacheMiddleware(300),
     actorController.getActorByNamespace
   );
+
+  // Apply authentication middleware to all routes
+  router.use(isAuthenticated);
 
   // Create new actor
   router.post('/', validate(createActorSchema), actorController.createActor);

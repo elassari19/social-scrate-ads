@@ -24,7 +24,7 @@ export default function StorePage() {
         {storeCategories.map((tab, index) => (
           <Button variant="outline" key={index}>
             <Link
-              href={`/store/categories/${tab.url}`}
+              href={`/store/actors/${tab.url}`}
               className="cursor-pointer hover:bg-accent w-full h-full text-sm"
             >
               {tab.name}

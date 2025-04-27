@@ -7,7 +7,24 @@ export class ActorController {
   getAllActors = async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user?.id;
-      const actors = await this.actorService.getAllActors(userId);
+      const { limit, page, q, category } = req.query;
+
+      // Parse numeric parameters
+      const limitNum = limit ? parseInt(limit as string, 15) : undefined;
+      const pageNum = page ? parseInt(page as string, 0) : undefined;
+
+      // Get filtering parameters
+      const search = (q as string) || undefined;
+      const categoryFilter = (category as string) || undefined;
+
+      const actors = await this.actorService.getAllActors(
+        userId,
+        limitNum,
+        pageNum,
+        search,
+        categoryFilter
+      );
+
       res.json(actors);
     } catch (error) {
       console.error('Error fetching actors:', error);
