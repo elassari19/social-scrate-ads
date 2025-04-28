@@ -1,4 +1,4 @@
-import SignUpForm from '@/components/auth/signup-form';
+import SignUpForm from '@/components/forms/signup-form';
 import { Typography } from '@/components/ui/Typography';
 import { redirect } from 'next/navigation';
 import { isAuthenticated } from '@/lib/cookies';

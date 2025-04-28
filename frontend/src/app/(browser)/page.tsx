@@ -12,74 +12,8 @@ import soc2Image from '@/assets/home/soc2.png';
 import gdprImage from '@/assets/home/gdpr.png';
 import avatarImage from '@/assets/home/avatar.png';
 import Link from 'next/link';
-
-const actorCards = [
-  {
-    id: 1,
-    title: 'TikTok Data Extractor',
-    namespace: 'clockworks/free-tiktok-scraper',
-    description:
-      'Extract data about videos, users, and channels based on hashtags or scrape full user profiles.',
-    stars: '25k',
-    rating: 4.8,
-    authorName: 'Clockworks',
-    authorBadgeColor: 'bg-purple-100',
-    icon: '🎵',
-    iconBg: 'bg-black',
-  },
-  {
-    id: 2,
-    title: 'Google Maps Extractor',
-    namespace: 'compass/google-maps-extractor',
-    description:
-      'Extract data from hundreds of places fast. Scrape Google Maps by keyword, category, location.',
-    stars: '37.3k',
-    rating: 4.3,
-    authorName: 'Compass',
-    authorBadgeColor: 'bg-green-100',
-    icon: '🗺️',
-    iconBg: 'bg-white border',
-  },
-  {
-    id: 3,
-    title: 'Instagram Scraper',
-    namespace: 'Tonfy/instagram-scraper',
-    description:
-      'Scrape and download Instagram posts, profiles, places, hashtags, photos, and comments. Get images.',
-    stars: '86.4k',
-    rating: 4.3,
-    authorName: 'Tonfy',
-    authorBadgeColor: 'bg-yellow-100',
-    icon: '📸',
-    iconBg: 'bg-gradient-to-tr from-pink-500 to-purple-600',
-  },
-  {
-    id: 4,
-    title: 'Website Content Crawler',
-    namespace: 'Tonfy/website-content-crawler',
-    description:
-      'Crawl websites and extract text content to feed AI models, LLM applications, vector databases, or more.',
-    stars: '44.5k',
-    rating: 4.6,
-    authorName: 'Tonfy',
-    authorBadgeColor: 'bg-yellow-100',
-    icon: '🕸️',
-    iconBg: 'bg-blue-600',
-  },
-  {
-    id: 5,
-    title: 'Amazon Scraper',
-    namespace: 'junglee/free-amazon-product-scraper',
-    description:
-      'Gets you product data from Amazon. Unofficial API. Scrapes and downloads product information.',
-    stars: '5.8k',
-    rating: 4.4,
-    authorName: 'Junglee',
-    authorBadgeColor: 'bg-orange-100',
-    icon: '🛒',
-    iconBg: 'bg-white border',
-  },
-];
+import SearchInput from '../../components/ui/search-input';
+import { mockActors } from '../../utils/constants';
 
 const buildActor = {
   id: 6,
@@ -100,7 +34,7 @@ export default function Home() {
     <div className="flex flex-col items-center w-full bg-gray-50 py-10 md:py-20">
       <HeroSection
         heroHeader={
-          <>
+          <div className="mx-auto text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Your full-stack platform for web scraping
             </h1>
@@ -109,9 +43,15 @@ export default function Home() {
               publish web scrapers, AI agents, and automation tools. We call
               them Actors.
             </p>
-          </>
+            <div className="mt-8">
+              <SearchInput
+                path="/store/actors"
+                placeholder="Search for actors, e.g., Google Maps Scraper"
+              />
+            </div>
+          </div>
         }
-        actors={actorCards}
+        actors={mockActors.slice(0, 5)}
         buildActor={buildActor}
         heroFooter={
           <div className="mt-10 text-center">

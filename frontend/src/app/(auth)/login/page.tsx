@@ -1,4 +1,4 @@
-import LoginForm from '@/components/auth/login-form';
+import LoginForm from '@/components/forms/login-form';
 import { Typography } from '@/components/ui/Typography';
 import { isAuthenticated } from '@/lib/cookies';
 import { redirect } from 'next/navigation';
