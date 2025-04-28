@@ -41,7 +41,7 @@ export default async function ActorsPage({ searchParams }: Props) {
         <p className="text-gray-800 max-w-3xl mx-auto text-center mb-8">
           Find hundreds of ready-made Actors for your web scraping or automation
           project. Or{' '}
-          <Link href="/build">
+          <Link href="/actors/build">
             <span className="hover:underline text-orange-500 font-semibold">
               build your own
             </span>{' '}
