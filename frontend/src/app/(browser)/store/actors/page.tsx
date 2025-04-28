@@ -1,8 +1,8 @@
 import SearchInput from '@/components/ui/search-input';
 import { storeCategories } from '@/utils/constants';
-import ActorCard from '@/components/cards/actor-card';
 import Link from 'next/link';
 import { getActors } from '@/lib/actor';
+import ActorGrid from '@/components/sections/actor-grid';
 
 interface Actor {
   id: number;
@@ -85,20 +85,12 @@ export default async function ActorsPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Actors grid */}
-      {actors.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-gray-500">
-            No actors found matching your criteria.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {actors.map((actor: Actor) => (
-            <ActorCard key={actor.id} actor={actor} />
-          ))}
-        </div>
-      )}
+      {/* Actors grid with load more functionality */}
+      <ActorGrid
+        initialActors={actors}
+        category={categoryFilter}
+        searchQuery={searchQuery}
+      />
     </div>
   );
 }
