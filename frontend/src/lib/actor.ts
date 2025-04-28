@@ -1,7 +1,7 @@
 'use server';
 
 import axios from 'axios';
-import { getAuthHeaders } from './auth';
+import { getAuthHeaders, getSession } from './auth';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -159,7 +159,11 @@ export async function getActorExecutions(id: number) {
 /**
  * Rate an actor
  */
-export async function rateActor(actorId: string, rating: number, comment?: string) {
+export async function rateActor(
+  actorId: string,
+  rating: number,
+  comment?: string
+) {
   try {
     // Get authentication headers
     const authHeaders = await getAuthHeaders();
@@ -198,13 +202,10 @@ export async function getActorRatings(actorId: string) {
     // Get authentication headers
     const authHeaders = await getAuthHeaders();
 
-    const response = await axios.get(
-      `${API_URL}/actors/${actorId}/ratings`,
-      {
-        withCredentials: true,
-        headers: authHeaders,
-      }
-    );
+    const response = await axios.get(`${API_URL}/actors/${actorId}/ratings`, {
+      withCredentials: true,
+      headers: authHeaders,
+    });
 
     if (response.status !== 200) {
       throw new Error('Failed to fetch actor ratings');
@@ -215,7 +216,10 @@ export async function getActorRatings(actorId: string) {
       data: response.data,
     };
   } catch (error) {
-    console.error(`Error fetching ratings for actor with ID ${actorId}:`, error);
+    console.error(
+      `Error fetching ratings for actor with ID ${actorId}:`,
+      error
+    );
     return {
       success: false,
       error: 'Failed to fetch actor ratings',
@@ -266,7 +270,10 @@ export async function getUserRating(actorId: string) {
 /**
  * Update an existing rating
  */
-export async function updateRating(ratingId: string, data: { rating?: number; comment?: string }) {
+export async function updateRating(
+  ratingId: string,
+  data: { rating?: number; comment?: string }
+) {
   try {
     // Get authentication headers
     const authHeaders = await getAuthHeaders();
@@ -339,7 +346,7 @@ export async function analyzeActorRatings(actorId: string, prompt?: string) {
 
     const payload = {
       actorId,
-      prompt
+      prompt,
     };
 
     const response = await axios.post(
@@ -364,6 +371,125 @@ export async function analyzeActorRatings(actorId: string, prompt?: string) {
     return {
       success: false,
       error: 'Failed to analyze actor ratings',
+    };
+  }
+}
+
+/**
+ * Create a new actor
+ */
+export async function createActor(actorData: any) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+    const user = await getSession();
+
+    const response = await axios.post(
+      `${API_URL}/actors`,
+      {
+        ...actorData,
+        authorName: user?.name.split(' ')[0],
+      },
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+      }
+    );
+
+    if (response.status !== 201) {
+      throw new Error(`Failed to create actor: ${response.status}`);
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error: any) {
+    // Log detailed error information
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('Error response data:', error.response.data);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('Error request:', error.request);
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Error message:', error.message);
+    }
+
+    return {
+      success: false,
+      error:
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to create actor',
+    };
+  }
+}
+
+/**
+ * Update an existing actor
+ */
+export async function updateActor(id: number, actorData: any) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.put(`${API_URL}/actors/${id}`, actorData, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
+    });
+
+    if (response.status !== 200) {
+      throw new Error('Failed to update actor');
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error: any) {
+    console.error(`Error updating actor with ID ${id}:`, error);
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to update actor',
+    };
+  }
+}
+
+/**
+ * Delete an actor
+ */
+export async function deleteActor(id: number) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.delete(`${API_URL}/actors/${id}`, {
+      withCredentials: true,
+      headers: authHeaders,
+    });
+
+    if (response.status !== 204) {
+      throw new Error('Failed to delete actor');
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error: any) {
+    console.error(`Error deleting actor with ID ${id}:`, error);
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to delete actor',
     };
   }
 }

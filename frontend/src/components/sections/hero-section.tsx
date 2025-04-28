@@ -8,12 +8,8 @@ interface Actor {
   title: string;
   namespace: string;
   description: string;
-  stars: string;
-  rating: number;
   authorName: string;
-  authorBadgeColor: string;
   icon: string;
-  iconBg: string;
 }
 
 interface HeroSectionProps {

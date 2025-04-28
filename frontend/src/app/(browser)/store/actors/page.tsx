@@ -4,20 +4,6 @@ import Link from 'next/link';
 import { getActors } from '@/lib/actor';
 import ActorGrid from '@/components/sections/actor-grid';
 
-interface Actor {
-  id: number;
-  title: string;
-  namespace: string;
-  description: string;
-  stars: string;
-  rating: number;
-  authorName: string;
-  authorBadgeColor: string;
-  icon: string;
-  iconBg: string;
-  tags: string[];
-}
-
 interface Props {
   searchParams: Promise<{
     category?: string;
@@ -41,13 +27,14 @@ export default async function ActorsPage({ searchParams }: Props) {
         <p className="text-gray-800 max-w-3xl mx-auto text-center mb-8">
           Find hundreds of ready-made Actors for your web scraping or automation
           project. Or{' '}
-          <Link href="/actors/build">
+          <Link href="/store/actors/build">
             <span className="hover:underline text-orange-500 font-semibold">
               build your own
             </span>{' '}
             .
           </Link>
         </p>
+
         <SearchInput
           path="/store/actors"
           placeholder="Search for actors, e.g., Google Maps Scraper"
