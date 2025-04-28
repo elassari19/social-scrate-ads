@@ -196,4 +196,125 @@ export class ActorController {
       res.status(500).json({ error: 'Failed to fetch actor executions' });
     }
   };
+
+  rateActor = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { actorId } = req.params;
+      const { rating, comment } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const ratingResult = await this.actorService.rateActor(
+        actorId,
+        userId,
+        rating,
+        comment
+      );
+
+      res.status(201).json(ratingResult);
+    } catch (error) {
+      console.error('Error rating actor:', error);
+      
+      if (error instanceof Error && error.message.includes('not found')) {
+        res.status(404).json({ error: error.message });
+        return;
+      }
+
+      res.status(500).json({ error: 'Failed to rate actor' });
+    }
+  };
+
+  getUserRating = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { actorId } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const rating = await this.actorService.getUserRating(actorId, userId);
+
+      if (!rating) {
+        res.status(404).json({ error: 'Rating not found' });
+        return;
+      }
+
+      res.json(rating);
+    } catch (error) {
+      console.error('Error fetching user rating:', error);
+      res.status(500).json({ error: 'Failed to fetch user rating' });
+    }
+  };
+
+  getActorRatings = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { actorId } = req.params;
+      const ratings = await this.actorService.getActorRatings(actorId);
+
+      res.json(ratings);
+    } catch (error) {
+      console.error('Error fetching actor ratings:', error);
+      res.status(500).json({ error: 'Failed to fetch actor ratings' });
+    }
+  };
+
+  updateRating = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { rating, comment } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const updatedRating = await this.actorService.updateRating(
+        id, 
+        userId, 
+        { rating, comment }
+      );
+
+      res.json(updatedRating);
+    } catch (error) {
+      console.error('Error updating rating:', error);
+      
+      if (error instanceof Error && error.message.includes('not found')) {
+        res.status(404).json({ error: error.message });
+        return;
+      }
+
+      res.status(500).json({ error: 'Failed to update rating' });
+    }
+  };
+
+  deleteRating = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      await this.actorService.deleteRating(id, userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting rating:', error);
+      
+      if (error instanceof Error && error.message.includes('not found')) {
+        res.status(404).json({ error: error.message });
+        return;
+      }
+
+      res.status(500).json({ error: 'Failed to delete rating' });
+    }
+  };
 }

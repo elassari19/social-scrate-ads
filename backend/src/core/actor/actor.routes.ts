@@ -7,6 +7,7 @@ import {
   updateActorSchema,
   executeActorSchema,
   deepSeekActorSchema,
+  rateActorSchema,
 } from './actor.schema';
 import { isAuthenticated } from '../auth/auth.middleware';
 
@@ -59,6 +60,30 @@ export function createActorRoutes(actorController: ActorController): Router {
     cacheMiddleware(60), // Cache for 1 minute
     actorController.getActorExecutions
   );
+
+  // Rating routes
+  // Rate an actor
+  router.post(
+    '/:actorId/ratings',
+    validate(rateActorSchema),
+    actorController.rateActor
+  );
+
+  // Get all ratings for an actor
+  router.get(
+    '/:actorId/ratings',
+    cacheMiddleware(60),
+    actorController.getActorRatings
+  );
+
+  // Get user's rating for an actor
+  router.get('/:actorId/ratings/user', actorController.getUserRating);
+
+  // Update a rating
+  router.put('/ratings/:id', actorController.updateRating);
+
+  // Delete a rating
+  router.delete('/ratings/:id', actorController.deleteRating);
 
   return router;
 }

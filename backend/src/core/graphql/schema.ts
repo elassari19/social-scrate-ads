@@ -12,6 +12,7 @@ export const typeDefs = gql`
     scrapingJobs: [ScrapingJob!]
     metrics: UserMetrics
     actors: [Actor!]!
+    actorRatings: [ActorRating!]!
   }
 
   type AdReport {
@@ -96,8 +97,6 @@ export const typeDefs = gql`
     title: String!
     namespace: String!
     description: String!
-    stars: String!
-    rating: Float!
     authorName: String!
     authorBadgeColor: String!
     icon: String!
@@ -107,6 +106,18 @@ export const typeDefs = gql`
     updatedAt: String!
     user: User!
     executions: [ActorExecution!]!
+    ratings: [ActorRating!]!
+    averageRating: Float
+  }
+
+  type ActorRating {
+    id: ID!
+    rating: Float!
+    comment: String
+    createdAt: String!
+    updatedAt: String!
+    user: User!
+    actor: Actor!
   }
 
   type ActorExecution {
@@ -128,6 +139,8 @@ export const typeDefs = gql`
     actors(userId: ID): [Actor!]!
     actor(namespace: String!): Actor
     actorExecutions(actorId: ID!, limit: Int): [ActorExecution!]!
+    actorRatings(actorId: ID!): [ActorRating!]!
+    userRating(actorId: ID!, userId: ID!): ActorRating
   }
 
   type Mutation {
@@ -138,8 +151,6 @@ export const typeDefs = gql`
       title: String!
       namespace: String!
       description: String!
-      stars: String!
-      rating: Float!
       authorName: String!
       authorBadgeColor: String!
       icon: String!
@@ -152,14 +163,18 @@ export const typeDefs = gql`
       title: String
       namespace: String
       description: String
-      stars: String
-      rating: Float
       authorName: String
       authorBadgeColor: String
       icon: String
       iconBg: String
       script: String
     ): Actor!
+
+    rateActor(actorId: ID!, rating: Float!, comment: String): ActorRating!
+
+    updateRating(id: ID!, rating: Float, comment: String): ActorRating!
+
+    deleteRating(id: ID!): Boolean!
 
     deleteActor(id: ID!): Boolean!
 

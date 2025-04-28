@@ -21,32 +21,46 @@ model User {
   adReports     AdReport[]
   scrapingJobs  ScrapingJob[]
   metrics       UserMetrics?
-  actors        Actor[]        // New relation to actors
+  actors        Actor[]        // Created actors
+  actorRatings  ActorRating[]  // Ratings given to actors
 }
 
 // New Actor model based on actor-card.tsx properties
 model Actor {
-  id               String   @id @default(uuid())
+  id               String         @id @default(uuid())
   title            String
-  namespace        String   @unique
+  namespace        String         @unique
   description      String
-  stars            String
-  rating           Float
   authorName       String
-  authorBadgeColor String
   icon             String
-  iconBg           String
-  url              String
   tags             String[]
-  script           Json     // Puppeteer script for scraping
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  page             Json?          // Puppeteer script for scraping
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   userId           String
-  user             User     @relation(fields: [userId], references: [id])
+  user             User           @relation(fields: [userId], references: [id])
   executions       ActorExecution[]
+  ratings          ActorRating[]  // Ratings received from users
 }
 
-// New model for tracking actor executions
+// New model for user ratings on actors
+model ActorRating {
+  id          String   @id @default(uuid())
+  rating      Float    // User's rating (typically 1-5)
+  comment     String?  // Optional review comment
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  actorId     String
+  actor       Actor    @relation(fields: [actorId], references: [id])
+  
+  // Each user can rate an actor only once
+  @@unique([userId, actorId])
+}
+
 model ActorExecution {
   id          String   @id @default(uuid())
   status      String   // pending, running, completed, failed

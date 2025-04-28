@@ -122,4 +122,50 @@ export class PuppeteerController {
       });
     }
   };
+
+  // New endpoint to analyze actor ratings using DeepSeek AI
+  analyzeActorRatings = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { actorId, prompt, additionalContext } = req.body;
+      const userId = req.user?.id;
+
+      if (!actorId) {
+        res.status(400).json({ error: 'Actor ID is required' });
+        return;
+      }
+
+      // Use the enhanced prompt or a default one
+      const analysisPrompt =
+        prompt ||
+        "Analyze these ratings and provide insights about the actor's performance, common themes in feedback, and suggestions for improvement.";
+
+      // Log the request
+      console.log(
+        `User ${userId} requested actor ratings analysis for actor ${actorId}`
+      );
+
+      // Process the ratings with DeepSeek
+      const result = await this.puppeteerService.processRatingsWithDeepSeek(
+        actorId,
+        analysisPrompt,
+        {
+          ...additionalContext,
+          userId,
+        }
+      );
+
+      res.json({
+        actorId,
+        analysis: result,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Rating analysis error:', error);
+
+      res.status(500).json({
+        error: 'Failed to analyze actor ratings with DeepSeek AI',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
 }

@@ -351,4 +351,80 @@ export class PuppeteerService {
       pagination: result.pagination || { maxPages: 1 },
     };
   }
+
+  // Process actor with rating information
+  async processRatingsWithDeepSeek(
+    actorId: string,
+    prompt: string = 'Analyze the ratings and provide insights',
+    additionalContext?: Record<string, any>
+  ): Promise<any> {
+    if (!this.deepSeekApiKey) {
+      throw new Error('DeepSeek API key is not configured');
+    }
+
+    try {
+      // Fetch actor with ratings
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+
+      const actor = await prisma.actor.findUnique({
+        where: { id: actorId },
+        include: {
+          ratings: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!actor) {
+        throw new Error('Actor not found');
+      }
+
+      // Calculate average rating
+      let averageRating = null;
+      if (actor.ratings.length > 0) {
+        const sum = actor.ratings.reduce(
+          (acc: number, rating: any) => acc + rating.rating,
+          0
+        );
+        averageRating = sum / actor.ratings.length;
+      }
+
+      // Prepare context with rating data
+      const context = {
+        actor: {
+          id: actor.id,
+          title: actor.title,
+          description: actor.description,
+          namespace: actor.namespace,
+          averageRating,
+        },
+        ratings: actor.ratings.map((r: any) => ({
+          rating: r.rating,
+          comment: r.comment,
+          userName: r.user.name,
+          createdAt: r.createdAt,
+        })),
+        ...additionalContext,
+      };
+
+      // Call DeepSeek API with the prompt and context
+      const result = await this.callDeepSeekAPI(prompt, context);
+      return result;
+    } catch (error) {
+      console.error('Rating analysis error:', error);
+      throw new Error(
+        `Failed to process ratings: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
 }

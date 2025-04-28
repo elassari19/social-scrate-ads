@@ -61,14 +61,25 @@ export const resolvers = {
         take: limit,
       });
     },
-    // analytics: async (
-    //   _: any,
-    //   { userId }: { userId: string },
-    //   { user }: { user: User }
-    // ) => {
-    //   if (!user) throw new AuthenticationError('Not authenticated');
-    //   return prisma.analytics.findMany({ where: { userId } });
-    // },
+    actorRatings: async (_: any, { actorId }: { actorId: string }) => {
+      return prisma.actorRating.findMany({
+        where: { actorId },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+    userRating: async (
+      _: any,
+      { actorId, userId }: { actorId: string; userId: string }
+    ) => {
+      return prisma.actorRating.findUnique({
+        where: {
+          userId_actorId: {
+            userId,
+            actorId,
+          },
+        },
+      });
+    },
   },
   Mutation: {
     updateUser: async (
@@ -175,7 +186,7 @@ export const resolvers = {
     },
     executeActor: async (
       _: any,
-      { id, url, options }: { id: string; url?: string; options?: any },
+      { id, options }: { id: string; url?: string; options?: any },
       { user }: { user: User }
     ) => {
       if (!user) throw new AuthenticationError('Not authenticated');
@@ -184,18 +195,95 @@ export const resolvers = {
       const puppeteerService = new PuppeteerService(redisClient);
       const actorService = new ActorService(puppeteerService);
 
-      return actorService.executeActor(id, url, options);
+      return actorService.executeActor(id, options);
     },
-    // generateAnalytics: async (_: any, { reportId }: { reportId: string }, { user }: { user: User }) => {
-    //   if (!user) throw new AuthenticationError('Not authenticated');
-    //   return prisma.analytics.create({
-    //     data: {
-    //       userId: user.id,
-    //       reportId,
-    //       insights: JSON.stringify({ generated: new Date() }),
-    //     },
-    //   });
-    // },
+    rateActor: async (
+      _: any,
+      {
+        actorId,
+        rating,
+        comment,
+      }: { actorId: string; rating: number; comment?: string },
+      { user }: { user: User }
+    ) => {
+      if (!user) throw new AuthenticationError('Not authenticated');
+
+      // Check if the actor exists
+      const actor = await prisma.actor.findUnique({
+        where: { id: actorId },
+      });
+
+      if (!actor) throw new Error('Actor not found');
+
+      // Create or update the rating (upsert operation)
+      return prisma.actorRating.upsert({
+        where: {
+          userId_actorId: {
+            userId: user.id,
+            actorId,
+          },
+        },
+        update: {
+          rating,
+          comment,
+        },
+        create: {
+          userId: user.id,
+          actorId,
+          rating,
+          comment,
+        },
+      });
+    },
+    updateRating: async (
+      _: any,
+      {
+        id,
+        rating,
+        comment,
+      }: { id: string; rating?: number; comment?: string },
+      { user }: { user: User }
+    ) => {
+      if (!user) throw new AuthenticationError('Not authenticated');
+
+      // Verify ownership
+      const existingRating = await prisma.actorRating.findFirst({
+        where: { id, userId: user.id },
+      });
+
+      if (!existingRating)
+        throw new Error(
+          'Rating not found or you do not have permission to update it'
+        );
+
+      return prisma.actorRating.update({
+        where: { id },
+        data: {
+          rating: rating !== undefined ? rating : existingRating.rating,
+          comment: comment !== undefined ? comment : existingRating.comment,
+        },
+      });
+    },
+    deleteRating: async (
+      _: any,
+      { id }: { id: string },
+      { user }: { user: User }
+    ) => {
+      if (!user) throw new AuthenticationError('Not authenticated');
+
+      // Verify ownership
+      const rating = await prisma.actorRating.findFirst({
+        where: { id, userId: user.id },
+      });
+
+      if (!rating)
+        throw new Error(
+          'Rating not found or you do not have permission to delete it'
+        );
+
+      await prisma.actorRating.delete({ where: { id } });
+      return true;
+    },
   },
 
   // Add type resolvers to handle relationships
@@ -223,6 +311,12 @@ export const resolvers = {
     actors: (parent: any) => {
       return prisma.actor.findMany({
         where: { userId: parent.id },
+      });
+    },
+    actorRatings: (parent: any) => {
+      return prisma.actorRating.findMany({
+        where: { userId: parent.id },
+        orderBy: { createdAt: 'desc' },
       });
     },
   },
@@ -285,9 +379,40 @@ export const resolvers = {
         orderBy: { createdAt: 'desc' },
       });
     },
+    ratings: (parent: any) => {
+      return prisma.actorRating.findMany({
+        where: { actorId: parent.id },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+    averageRating: async (parent: any) => {
+      const ratings = await prisma.actorRating.findMany({
+        where: { actorId: parent.id },
+        select: { rating: true },
+      });
+
+      if (ratings.length === 0) return null;
+
+      const sum = ratings.reduce((acc, rating) => acc + rating.rating, 0);
+      return sum / ratings.length;
+    },
   },
 
   ActorExecution: {
+    actor: (parent: any) => {
+      return prisma.actor.findUnique({
+        where: { id: parent.actorId },
+      });
+    },
+  },
+
+  // Add resolver for ActorRating type
+  ActorRating: {
+    user: (parent: any) => {
+      return prisma.user.findUnique({
+        where: { id: parent.userId },
+      });
+    },
     actor: (parent: any) => {
       return prisma.actor.findUnique({
         where: { id: parent.actorId },

@@ -1,4 +1,4 @@
-import { Actor, PrismaClient, Prisma } from '@prisma/client';
+import { Actor, PrismaClient, Prisma, ActorRating } from '@prisma/client';
 import { PuppeteerService } from '../puppeteer/puppeteer.service';
 
 const prisma = new PrismaClient();
@@ -65,7 +65,7 @@ export class ActorService {
     userId: string
   ): Promise<Actor> {
     // Ensure script is a valid JSON object
-    const script = actorData.script || {};
+    const page = actorData.page || {};
 
     // Ensure tags is an array
     const tags = Array.isArray(actorData.tags) ? actorData.tags : [];
@@ -75,15 +75,10 @@ export class ActorService {
         title: actorData.title,
         namespace: actorData.namespace,
         description: actorData.description,
-        stars: actorData.stars,
-        rating: actorData.rating,
         authorName: actorData.authorName,
-        authorBadgeColor: actorData.authorBadgeColor,
         icon: actorData.icon,
-        iconBg: actorData.iconBg,
-        url: actorData.url,
         tags,
-        script: JSON.parse(JSON.stringify(script)),
+        page: JSON.parse(JSON.stringify(page)),
         userId,
       },
     });
@@ -109,8 +104,8 @@ export class ActorService {
     const updateData: any = { ...actorData };
 
     // Only process script if it's provided
-    if (actorData.script) {
-      updateData.script = JSON.parse(JSON.stringify(actorData.script));
+    if (actorData.page) {
+      updateData.page = JSON.parse(JSON.stringify(actorData.page));
     }
 
     // Handle tags array if provided
@@ -172,11 +167,6 @@ export class ActorService {
       const page = await this.puppeteerService.createPage();
 
       try {
-        // Navigate to the actor's predefined URL
-        if (actor.url) {
-          await page.goto(actor.url, { waitUntil: 'domcontentloaded' });
-        }
-
         // Execute the script
         // We're wrapping the user script in an async function
         const scriptFunction = new Function(
@@ -185,7 +175,7 @@ export class ActorService {
           `
           return (async () => {
             try {
-              ${actor.script}
+              ${actor.page}
             } catch (error) {
               return { error: error.message };
             }
@@ -450,5 +440,121 @@ export class ActorService {
       orderBy: { createdAt: 'desc' },
       take: limit,
     });
+  }
+
+  // New method to get actor's average rating
+  async getActorAverageRating(actorId: string): Promise<number | null> {
+    const ratings = await prisma.actorRating.findMany({
+      where: { actorId },
+      select: { rating: true },
+    });
+
+    if (ratings.length === 0) return null;
+
+    const sum = ratings.reduce((acc, rating) => acc + rating.rating, 0);
+    return sum / ratings.length;
+  }
+
+  // New method to rate an actor
+  async rateActor(
+    actorId: string,
+    userId: string,
+    rating: number,
+    comment?: string
+  ): Promise<ActorRating> {
+    // Check if the actor exists
+    const actor = await prisma.actor.findUnique({
+      where: { id: actorId },
+    });
+
+    if (!actor) throw new Error('Actor not found');
+
+    // Create or update the rating (upsert operation)
+    return prisma.actorRating.upsert({
+      where: {
+        userId_actorId: {
+          userId,
+          actorId,
+        },
+      },
+      update: {
+        rating,
+        comment,
+      },
+      create: {
+        userId,
+        actorId,
+        rating,
+        comment,
+      },
+    });
+  }
+
+  // New method to get user's rating for a specific actor
+  async getUserRating(
+    actorId: string,
+    userId: string
+  ): Promise<ActorRating | null> {
+    return prisma.actorRating.findUnique({
+      where: {
+        userId_actorId: {
+          userId,
+          actorId,
+        },
+      },
+    });
+  }
+
+  // New method to get all ratings for an actor
+  async getActorRatings(actorId: string): Promise<ActorRating[]> {
+    return prisma.actorRating.findMany({
+      where: { actorId },
+      orderBy: { createdAt: 'desc' },
+      include: { user: true },
+    });
+  }
+
+  // New method to update a rating
+  async updateRating(
+    id: string,
+    userId: string,
+    data: { rating?: number; comment?: string }
+  ): Promise<ActorRating> {
+    // Verify ownership
+    const existingRating = await prisma.actorRating.findFirst({
+      where: { id, userId },
+    });
+
+    if (!existingRating) {
+      throw new Error(
+        'Rating not found or you do not have permission to update it'
+      );
+    }
+
+    return prisma.actorRating.update({
+      where: { id },
+      data: {
+        rating: data.rating !== undefined ? data.rating : existingRating.rating,
+        comment:
+          data.comment !== undefined ? data.comment : existingRating.comment,
+      },
+    });
+  }
+
+  // New method to delete a rating
+  async deleteRating(id: string, userId: string): Promise<boolean> {
+    // Verify ownership
+    const rating = await prisma.actorRating.findFirst({
+      where: { id, userId },
+    });
+
+    if (!rating) {
+      throw new Error(
+        'Rating not found or you do not have permission to delete it'
+      );
+    }
+
+    await prisma.actorRating.delete({ where: { id } });
+    return true;
   }
 }

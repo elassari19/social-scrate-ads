@@ -11,13 +11,9 @@ export const createActorSchema = z.object({
       'Namespace must contain only lowercase letters, numbers, and hyphens'
     ),
   description: z.string().min(1, 'Description is required'),
-  stars: z.string(),
-  rating: z.number().min(0).max(5),
   authorName: z.string().min(1, 'Author name is required'),
-  authorBadgeColor: z.string(),
   icon: z.string(),
-  iconBg: z.string(),
-  script: z.any().refine((val) => val !== null, 'Puppeteer script is required'),
+  page: z.any().refine((val) => val !== null, 'Puppeteer script is required'),
   prompt: z.string().optional(), // Main prompt for DeepSeek AI integration
   prompts: z.record(z.string()).optional().default({}), // Additional prompts for AI analysis
   tags: z.array(z.string()).optional().default([]),
@@ -36,13 +32,9 @@ export const updateActorSchema = z.object({
     )
     .optional(),
   description: z.string().min(1, 'Description is required').optional(),
-  stars: z.string().optional(),
-  rating: z.number().min(0).max(5).optional(),
   authorName: z.string().min(1, 'Author name is required').optional(),
-  authorBadgeColor: z.string().optional(),
   icon: z.string().optional(),
-  iconBg: z.string().optional(),
-  script: z
+  page: z
     .any()
     .optional()
     .refine(
@@ -53,6 +45,17 @@ export const updateActorSchema = z.object({
   prompts: z.record(z.string()).optional(),
   tags: z.array(z.string()).optional(),
   dependencies: z.array(z.string()).optional(),
+});
+
+// Schema for actor rating
+export const rateActorSchema = z.object({
+  params: z.object({
+    actorId: z.string().uuid('Invalid actor ID'),
+  }),
+  body: z.object({
+    rating: z.number().min(1).max(5),
+    comment: z.string().optional(),
+  }),
 });
 
 // Schema for executing an actor
@@ -80,5 +83,6 @@ export const deepSeekActorSchema = z.object({
 // Custom type definitions based on the schemas
 export type CreateActorRequest = z.infer<typeof createActorSchema>;
 export type UpdateActorRequest = z.infer<typeof updateActorSchema>;
+export type RateActorRequest = z.infer<typeof rateActorSchema>;
 export type ExecuteActorRequest = z.infer<typeof executeActorSchema>;
 export type DeepSeekActorRequest = z.infer<typeof deepSeekActorSchema>;

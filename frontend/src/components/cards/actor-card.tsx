@@ -10,7 +10,7 @@ interface IProps extends React.HTMLAttributes<HTMLDivElement> {
     namespace: string;
     description: string;
     stars: string;
-    rating: number;
+    averageRating?: number; // Updated to use averageRating instead of rating
     authorName: string;
     authorBadgeColor: string;
     icon: string;
@@ -19,6 +19,11 @@ interface IProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const ActorCard = ({ actor, className }: IProps) => {
+  // Format the rating to display nicely (show only 1 decimal place if needed)
+  const formattedRating = actor.averageRating
+    ? actor.averageRating.toFixed(1).replace(/\.0$/, '')
+    : '-';
+
   return (
     <Link
       href={`/actor/${actor.namespace}`}
@@ -59,7 +64,7 @@ const ActorCard = ({ actor, className }: IProps) => {
           <span className="text-sm text-gray-500">{actor.stars}</span>
           <div className="flex items-center">
             <span className="text-sm text-gray-500 mr-1">★</span>
-            <span className="text-sm text-gray-500">{actor.rating}</span>
+            <span className="text-sm text-gray-500">{formattedRating}</span>
           </div>
         </div>
       </div>

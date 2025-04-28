@@ -9,7 +9,7 @@ interface Actor {
   namespace: string;
   description: string;
   stars: string;
-  rating: number;
+  averageRating?: number; // Changed from rating to averageRating
   authorName: string;
   authorBadgeColor: string;
   icon: string;

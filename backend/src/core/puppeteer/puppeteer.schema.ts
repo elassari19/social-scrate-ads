@@ -22,7 +22,15 @@ export const urlAndSelectorsSchema = z.object({
     .optional(),
 });
 
+// New schema for analyzing actor ratings
+export const analyzeRatingsSchema = z.object({
+  actorId: z.string().uuid('Invalid actor ID'),
+  prompt: z.string().optional(),
+  additionalContext: z.record(z.any()).optional(),
+});
+
 export type WebContentDeepSeekRequest = z.infer<
   typeof webContentDeepSeekSchema
 >;
 export type UrlAndSelectorsResponse = z.infer<typeof urlAndSelectorsSchema>;
+export type AnalyzeRatingsRequest = z.infer<typeof analyzeRatingsSchema>;
