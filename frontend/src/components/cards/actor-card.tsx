@@ -17,7 +17,7 @@ const ActorCard = ({ actor, className }: IProps) => {
 
   return (
     <Link
-      href={`/store/actors?namespace=${actor.namespace}`}
+      href={`/store/actors/${actor.namespace}`}
       className={cn(
         'bg-white p-6 rounded-lg border border-gray-200 hover:border-gray-300 shadow-md hover:shadow-xl transition-shadow duration-200',
         className
