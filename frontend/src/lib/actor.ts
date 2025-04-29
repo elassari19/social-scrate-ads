@@ -2,6 +2,8 @@
 
 import axios from 'axios';
 import { getAuthHeaders, getSession } from './auth';
+import { revalidatePath } from 'next/cache';
+import { Actor } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
@@ -26,6 +28,11 @@ export async function getActors(params: ActorParams = {}) {
 
     const queryString = queryParams.toString();
     const url = `${API_URL}/actors${queryString ? `?${queryString}` : ''}`;
+
+    // Log parameters in development only
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Fetching actors with params: ${JSON.stringify(params)}`);
+    }
 
     // Get authentication headers
     const authHeaders = await getAuthHeaders();

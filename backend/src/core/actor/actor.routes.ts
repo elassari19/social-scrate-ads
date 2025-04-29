@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ActorController } from './actor.controller';
-import { cacheMiddleware } from '../cache/cache.middleware';
+import { cacheMiddleware, clearCache } from '../cache/cache.middleware';
 import { validate } from '../middleware/validation.middleware';
 import {
   createActorSchema,
@@ -32,13 +32,24 @@ export function createActorRoutes(actorController: ActorController): Router {
   router.use(isAuthenticated);
 
   // Create new actor
-  router.post('/', validate(createActorSchema), actorController.createActor);
+  router.post(
+    '/',
+    clearCache('actors*'),
+    clearCache('actors*'),
+    validate(createActorSchema),
+    actorController.createActor
+  );
 
   // Update actor
-  router.put('/:id', validate(updateActorSchema), actorController.updateActor);
+  router.put(
+    '/:id',
+    clearCache('actors*'),
+    validate(updateActorSchema),
+    actorController.updateActor
+  );
 
   // Delete actor
-  router.delete('/:id', actorController.deleteActor);
+  router.delete('/:id', clearCache('actors*'), actorController.deleteActor);
 
   // Execute actor
   router.post(

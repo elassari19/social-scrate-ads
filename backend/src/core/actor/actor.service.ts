@@ -33,7 +33,7 @@ export class ActorService {
     // Filter by category if provided
     if (category) {
       where.tags = {
-        hasSome: [category],
+        has: category, // Change from hasSome to has to match exact category
       };
     }
 
@@ -42,6 +42,19 @@ export class ActorService {
       orderBy: { createdAt: 'desc' },
       take: take || 15,
       skip: page ? (page - 1) * (take || 15) : 0,
+      include: {
+        // Include ratings count and average rating
+        ratings: {
+          select: {
+            rating: true,
+          },
+        },
+        user: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
   }
 

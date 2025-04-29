@@ -3,6 +3,8 @@ import { storeCategories } from '@/utils/constants';
 import Link from 'next/link';
 import { getActors } from '@/lib/actor';
 import ActorGrid from '@/components/sections/actor-grid';
+import ActorCard from '../../../../components/cards/actor-card';
+import { Actor } from '../../../../types';
 
 interface Props {
   searchParams: Promise<{
@@ -72,12 +74,15 @@ export default async function ActorsPage({ searchParams }: Props) {
         </div>
       </div>
 
+      {/* Search results */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        {actors.map((actor: any) => (
+          <ActorCard key={actor.id} actor={actor} />
+        ))}
+      </div>
+
       {/* Actors grid with load more functionality */}
-      <ActorGrid
-        initialActors={actors}
-        category={categoryFilter}
-        searchQuery={searchQuery}
-      />
+      <ActorGrid category={categoryFilter} searchQuery={searchQuery} />
     </div>
   );
 }

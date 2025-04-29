@@ -2,48 +2,30 @@
 
 import ActorCard from '@/components/cards/actor-card';
 import LoadMore from '@/components/sections/load-more';
-
-interface Actor {
-  id: number;
-  title: string;
-  namespace: string;
-  description: string;
-  stars: string;
-  averageRating?: number; // Changed from rating to averageRating
-  authorName: string;
-  authorBadgeColor: string;
-  icon: string;
-  iconBg: string;
-  tags: string[];
-}
+import { getActors } from '@/lib/actor';
+import { Actor } from '@/types';
 
 interface ActorGridProps {
-  initialActors: Actor[];
   category?: string;
   searchQuery?: string;
 }
 
-export default function ActorGrid({
-  initialActors,
-  category,
-  searchQuery,
-}: ActorGridProps) {
+export default function ActorGrid({ category, searchQuery }: ActorGridProps) {
   const fetchMoreActors = async (page: number) => {
     try {
-      const queryParams = new URLSearchParams();
-      if (category) queryParams.append('category', category);
-      if (searchQuery) queryParams.append('q', searchQuery);
-      queryParams.append('page', page.toString());
-      queryParams.append('pageSize', '15');
+      // Use the server action from actor.ts instead of direct fetch
+      const result = await getActors({
+        category: category,
+        search: searchQuery,
+        page: page,
+        limit: 15,
+      });
 
-      const response = await fetch(`/api/actors?${queryParams.toString()}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch more actors');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch more actors');
       }
 
-      const data = await response.json();
-      return data.data;
+      return result.data;
     } catch (error) {
       console.error('Error loading more actors:', error);
       return [];
@@ -56,7 +38,6 @@ export default function ActorGrid({
 
   return (
     <LoadMore
-      initialData={initialActors}
       fetchMoreData={fetchMoreActors}
       renderItem={renderActor}
       className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"

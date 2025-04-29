@@ -10,8 +10,8 @@ export class ActorController {
       const { limit, page, q, category } = req.query;
 
       // Parse numeric parameters
-      const limitNum = limit ? parseInt(limit as string, 15) : undefined;
-      const pageNum = page ? parseInt(page as string, 0) : undefined;
+      const limitNum = limit ? parseInt(limit as string) : 15; // Default to 15
+      const pageNum = page ? parseInt(page as string) : 1; // Default to page 1
 
       // Get filtering parameters
       const search = (q as string) || undefined;
@@ -218,7 +218,7 @@ export class ActorController {
       res.status(201).json(ratingResult);
     } catch (error) {
       console.error('Error rating actor:', error);
-      
+
       if (error instanceof Error && error.message.includes('not found')) {
         res.status(404).json({ error: error.message });
         return;
@@ -275,16 +275,15 @@ export class ActorController {
         return;
       }
 
-      const updatedRating = await this.actorService.updateRating(
-        id, 
-        userId, 
-        { rating, comment }
-      );
+      const updatedRating = await this.actorService.updateRating(id, userId, {
+        rating,
+        comment,
+      });
 
       res.json(updatedRating);
     } catch (error) {
       console.error('Error updating rating:', error);
-      
+
       if (error instanceof Error && error.message.includes('not found')) {
         res.status(404).json({ error: error.message });
         return;
@@ -308,7 +307,7 @@ export class ActorController {
       res.status(204).send();
     } catch (error) {
       console.error('Error deleting rating:', error);
-      
+
       if (error instanceof Error && error.message.includes('not found')) {
         res.status(404).json({ error: error.message });
         return;

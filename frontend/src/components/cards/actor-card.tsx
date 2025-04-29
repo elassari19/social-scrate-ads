@@ -3,16 +3,10 @@ import React from 'react';
 import { cn } from '../../lib/utils';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Actor } from '@/types';
 
 interface IProps extends React.HTMLAttributes<HTMLDivElement> {
-  actor: {
-    id: number;
-    title: string;
-    namespace: string;
-    description: string;
-    authorName: string;
-    icon: string;
-  };
+  actor: Actor;
 }
 
 const ActorCard = ({ actor, className }: IProps) => {

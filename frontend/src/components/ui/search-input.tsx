@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ChangeEvent, FormEvent } from 'react';
+import React, { FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input } from './input';
 import { Button } from './button';
@@ -30,7 +30,7 @@ function SearchInput({
     const searchQuery = formData.get('searchQuery') as string;
 
     // Create new URLSearchParams object
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
 
     // Set or remove the 'q' parameter based on input value
     if (searchQuery) {
@@ -39,8 +39,14 @@ function SearchInput({
       params.delete('q');
     }
 
-    // Update the URL
-    router.push(`${path}?${params.toString()}`, { scroll: false });
+    // Preserve category if it exists
+    if (params.has('category') && !searchQuery) {
+      // If search is being cleared but category exists, keep the category
+      router.push(`${path}?${params.toString()}`, { scroll: false });
+    } else {
+      // Otherwise update with new search parameters
+      router.push(`${path}?${params.toString()}`, { scroll: false });
+    }
   };
 
   return (

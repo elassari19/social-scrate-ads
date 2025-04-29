@@ -1,33 +1,41 @@
 import { Request, Response, NextFunction } from 'express';
 import { RedisService } from './redis.service';
 
-export const cacheMiddleware = (expirationInSeconds = 300, keyPrefix = '') => {
+const redisService = RedisService.getInstance();
+
+// Cache middleware with support for query parameters
+export const cacheMiddleware = (ttlSeconds = 60) => {
   return async (req: Request, res: Response, next: NextFunction) => {
+    // Skip caching for non-GET requests
     if (req.method !== 'GET') {
       return next();
     }
 
-    const cacheKey = `${keyPrefix}:${req.originalUrl}`;
-    const redisService = RedisService.getInstance();
-
     try {
+      // Create a cache key that includes the URL and query parameters
+      const queryString = Object.keys(req.query).length
+        ? `?${new URLSearchParams(
+            req.query as Record<string, string>
+          ).toString()}`
+        : '';
+      const cacheKey = `${req.originalUrl}${queryString}`;
+
       const cachedData = await redisService.get(cacheKey);
 
       if (cachedData) {
         return res.json(JSON.parse(cachedData));
       }
 
-      // Store original res.json method
-      const originalJson = res.json.bind(res);
+      // Store the original res.json function
+      const originalJson = res.json;
 
-      // Override res.json method to cache the response
-      res.json = ((data: any) => {
-        redisService
-          .set(cacheKey, JSON.stringify(data), expirationInSeconds)
-          .catch((err) => console.error('Cache storage error:', err));
-
-        return originalJson(data);
-      }) as Response['json'];
+      // Override res.json to cache the response
+      res.json = function (data) {
+        // Store response in cache
+        redisService.set(cacheKey, JSON.stringify(data), ttlSeconds);
+        // Call the original json method
+        return originalJson.call(this, data);
+      };
 
       next();
     } catch (error) {
@@ -37,20 +45,13 @@ export const cacheMiddleware = (expirationInSeconds = 300, keyPrefix = '') => {
   };
 };
 
+// Clear cache by pattern (useful for invalidating cache on updates)
 export const clearCache = (pattern: string) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async () => {
     try {
-      const redisService = RedisService.getInstance();
-      const client = redisService.getClient();
-
-      const keys = await client.keys(`cache:${pattern}`);
-      if (keys.length > 0) {
-        await client.del(...keys);
-      }
-      next();
+      await redisService.del(`*${pattern}*`);
     } catch (error) {
       console.error('Clear cache error:', error);
-      next(error);
     }
   };
 };
