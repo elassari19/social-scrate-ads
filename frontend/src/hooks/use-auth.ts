@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { getCookie } from '@/lib/cookies';
-import { login as authLogin, logout as authLogout } from '@/lib/auth';
+import { login as authLogin, logout as authLogout } from '@/app/api/auth';
 
 interface User {
   id: string;

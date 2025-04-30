@@ -6,7 +6,7 @@ import {
   getActorRatings,
   deleteRating,
   analyzeActorRatings,
-} from '@/lib/actor';
+} from '@/app/api/actor';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {

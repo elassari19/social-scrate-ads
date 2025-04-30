@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { storeCategories } from '@/utils/constants';
-import { createActor, updateActor, deleteActor } from '@/lib/actor';
+import { createActor, updateActor, deleteActor } from '@/app/api/actor';
 import { Actor } from '../../types';
 
 // Actor build form schema

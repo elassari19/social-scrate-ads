@@ -1,4 +1,4 @@
-import { getActorByNamespace } from '@/lib/actor';
+import { getActorByNamespace } from '@/app/api/actor';
 import { ActorFormClient } from './actor-form-client';
 
 interface ActorFormProps {

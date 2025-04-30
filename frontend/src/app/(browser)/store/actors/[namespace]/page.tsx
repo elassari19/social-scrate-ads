@@ -1,6 +1,5 @@
 import React from 'react';
-import { getActorByNamespace, getActorRatings } from '@/lib/actor';
-import Image from 'next/image';
+import { getActorByNamespace, getActorRatings } from '@/app/api/actor';
 import { Edit, Star, Tag, User } from 'lucide-react';
 import Link from 'next/link';
 

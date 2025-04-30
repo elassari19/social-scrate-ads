@@ -1,10 +1,9 @@
 import SearchInput from '@/components/ui/search-input';
 import { storeCategories } from '@/utils/constants';
 import Link from 'next/link';
-import { getActors } from '@/lib/actor';
+import { getActors } from '@/app/api/actor';
 import ActorGrid from '@/components/sections/actor-grid';
-import ActorCard from '../../../../components/cards/actor-card';
-import { Actor } from '../../../../types';
+import ActorCard from '@/components/cards/actor-card';
 
 interface Props {
   searchParams: Promise<{

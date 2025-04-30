@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Star } from 'lucide-react';
-import { rateActor, updateRating, getUserRating } from '@/lib/actor';
+import { rateActor, updateRating, getUserRating } from '@/app/api/actor';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';

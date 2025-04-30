@@ -2,7 +2,7 @@
 
 import ActorCard from '@/components/cards/actor-card';
 import LoadMore from '@/components/sections/load-more';
-import { getActors } from '@/lib/actor';
+import { getActors } from '@/app/api/actor';
 import { Actor } from '@/types';
 
 interface ActorGridProps {

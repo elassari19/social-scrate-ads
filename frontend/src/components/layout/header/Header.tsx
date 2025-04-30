@@ -21,7 +21,7 @@ import {
   NavigationMenuTrigger,
 } from '../../ui/navigation-menu';
 import Logo from '../logo';
-import { logout } from '../../../lib/auth';
+import { logout } from '../../../app/api/auth';
 import {
   Menubar,
   MenubarMenu,

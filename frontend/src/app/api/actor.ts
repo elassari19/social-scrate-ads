@@ -59,7 +59,7 @@ export async function getActors(params: ActorParams = {}) {
       success: false,
       error: 'Failed to fetch actors',
       // Return mock data as fallback
-      data: await import('../utils/constants').then(
+      data: await import('../../utils/constants').then(
         (module) => module.mockActors
       ),
     };

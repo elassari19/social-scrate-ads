@@ -1,6 +1,4 @@
 import ActorForm from '@/components/forms/actor-form';
-import { getActorByNamespace } from '@/lib/actor';
-import { notFound } from 'next/navigation';
 
 interface EditActorPageProps {
   params: Promise<{
