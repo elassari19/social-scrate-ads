@@ -47,9 +47,10 @@ export const cacheMiddleware = (ttlSeconds = 60) => {
 
 // Clear cache by pattern (useful for invalidating cache on updates)
 export const clearCache = (pattern: string) => {
-  return async () => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
       await redisService.del(`*${pattern}*`);
+      next();
     } catch (error) {
       console.error('Clear cache error:', error);
     }

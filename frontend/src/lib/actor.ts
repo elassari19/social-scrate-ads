@@ -442,7 +442,7 @@ export async function createActor(actorData: any) {
 /**
  * Update an existing actor
  */
-export async function updateActor(id: number, actorData: any) {
+export async function updateActor(id: string, actorData: Partial<Actor>) {
   try {
     // Get authentication headers
     const authHeaders = await getAuthHeaders();
@@ -456,8 +456,15 @@ export async function updateActor(id: number, actorData: any) {
     });
 
     if (response.status !== 200) {
-      throw new Error('Failed to update actor');
+      console.error('Error response:', response.data);
+      return {
+        success: false,
+        error: 'Failed to update actor',
+      };
     }
+
+    // Revalidate to update cached data
+    revalidatePath('/store/actors');
 
     return {
       success: true,
@@ -465,9 +472,17 @@ export async function updateActor(id: number, actorData: any) {
     };
   } catch (error: any) {
     console.error(`Error updating actor with ID ${id}:`, error);
+    // Add more detailed error logging
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+    }
     return {
       success: false,
-      error: error.response?.data?.message || 'Failed to update actor',
+      error:
+        error.response?.data?.error ||
+        error.message ||
+        'Failed to update actor',
     };
   }
 }
@@ -475,7 +490,7 @@ export async function updateActor(id: number, actorData: any) {
 /**
  * Delete an actor
  */
-export async function deleteActor(id: number) {
+export async function deleteActor(id: string) {
   try {
     // Get authentication headers
     const authHeaders = await getAuthHeaders();

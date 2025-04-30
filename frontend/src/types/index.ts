@@ -3,7 +3,7 @@
  */
 
 export interface Actor {
-  id: number;
+  id: string;
   title: string;
   namespace: string;
   description: string;

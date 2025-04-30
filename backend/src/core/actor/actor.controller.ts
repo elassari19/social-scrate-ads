@@ -85,6 +85,7 @@ export class ActorController {
   };
 
   updateActor = async (req: Request, res: Response): Promise<void> => {
+    console.log('Updating actor with body:', req.body);
     try {
       const { id } = req.params;
       const userId = req.user?.id;

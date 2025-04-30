@@ -13,7 +13,13 @@ export const createActorSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   authorName: z.string().min(1, 'Author name is required'),
   icon: z.string(),
-  page: z.any().refine((val) => val !== null, 'Puppeteer script is required'),
+  page: z
+    .any()
+    .optional()
+    .refine(
+      (val) => val === undefined || val !== null,
+      'Puppeteer script cannot be null'
+    ),
   prompt: z.string().optional(), // Main prompt for DeepSeek AI integration
   prompts: z.record(z.string()).optional().default({}), // Additional prompts for AI analysis
   tags: z.array(z.string()).optional().default([]),
@@ -33,7 +39,7 @@ export const updateActorSchema = z.object({
     .optional(),
   description: z.string().min(1, 'Description is required').optional(),
   authorName: z.string().min(1, 'Author name is required').optional(),
-  icon: z.string().optional(),
+  icon: z.string().url().optional(),
   page: z
     .any()
     .optional()

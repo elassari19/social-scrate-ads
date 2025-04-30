@@ -1,7 +1,8 @@
 import React from 'react';
 import { getActorByNamespace, getActorRatings } from '@/lib/actor';
 import Image from 'next/image';
-import { Star, Tag, User } from 'lucide-react';
+import { Edit, Star, Tag, User } from 'lucide-react';
+import Link from 'next/link';
 
 interface IProps {
   params: Promise<{
@@ -46,7 +47,7 @@ async function page({ params }: IProps) {
               />
             </div>
           )}
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-bold">{actorResponse.title}</h1>
             <div className="flex items-center mt-2">
               <User className="w-4 h-4 mr-1" />
@@ -61,6 +62,17 @@ async function page({ params }: IProps) {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="">
+            <Link
+              href={`/store/actors/${namespace}/edit`}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center"
+            >
+              <Edit className="w-4 h-4 mr-1 text-white" />
+              Edit Actor
+            </Link>
           </div>
         </div>
 

@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { storeCategories } from '@/utils/constants';
 import { createActor, updateActor, deleteActor } from '@/lib/actor';
+import { Actor } from '../../types';
 
 // Actor build form schema
 const actorSchema = z.object({
@@ -30,13 +31,13 @@ const actorSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters'),
   icon: z.string().url().min(10, 'Icon URL is required'),
   tags: z.array(z.string()).optional(),
-  pageContent: z.string().min(10, 'Puppeteer script is required'),
+  pageContent: z.string().optional(),
 });
 
 export type ActorFormValues = z.infer<typeof actorSchema>;
 
 interface ActorFormClientProps {
-  initialData?: Partial<ActorFormValues & { tags?: string[]; id?: number }>;
+  initialData?: Partial<Actor>;
   isEditing?: boolean;
 }
 
@@ -83,7 +84,7 @@ export function ActorFormClient({
 
       if (isEditing && initialData?.id) {
         // Update existing actor
-        response = await updateActor(initialData.id as number, actorData);
+        response = await updateActor(initialData.id, actorData);
       } else {
         // Create new actor
         response = await createActor(actorData);
@@ -111,6 +112,7 @@ export function ActorFormClient({
         setSelectedTags([]);
       }
 
+      // Force a refresh to ensure updated data is displayed
       router.push('/store/actors');
       router.refresh();
     } catch (error: any) {
@@ -144,7 +146,7 @@ export function ActorFormClient({
 
       setIsSubmitting(true);
       try {
-        const response = await deleteActor(initialData.id as number);
+        const response = await deleteActor(initialData.id);
 
         if (!response.success) {
           throw new Error(response.error || 'Failed to delete actor');

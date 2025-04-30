@@ -16,12 +16,13 @@ export default async function ActorForm({ namespace }: ActorFormProps) {
 
     if (actorResponse.success && actorResponse.data) {
       initialData = {
+        id: actorResponse.data.id,
         title: actorResponse.data.title,
         namespace: actorResponse.data.namespace,
         description: actorResponse.data.description,
         icon: actorResponse.data.icon,
         tags: actorResponse.data.tags,
-        pageContent: actorResponse.data.page?.script || '',
+        pageContent: actorResponse.data.page || '',
       };
     }
   }
