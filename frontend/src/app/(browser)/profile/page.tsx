@@ -26,6 +26,7 @@ export default async function ProfilePage() {
         requestLimit: userData.subscription.requestLimit,
         requestCount: userData.subscription.requestCount,
         endDate: userData.subscription.endDate,
+        balance: userData.subscription.balance || 5.0, // Including balance field with default fallback
       }
     : null;
 

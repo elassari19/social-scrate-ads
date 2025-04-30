@@ -26,6 +26,18 @@ router.post('/create', subscriptionController.createSubscription);
 router.post('/checkout-session', subscriptionController.createCheckoutSession);
 router.post('/cancel', subscriptionController.cancelSubscription);
 
+// New deposit feature endpoints
+router.get('/balance', subscriptionController.getBalance);
+router.post(
+  '/deposit/checkout-session',
+  subscriptionController.createDepositCheckoutSession
+);
+router.post(
+  '/deposit/process',
+  subscriptionController.processSuccessfulDeposit
+);
+router.get('/transactions', subscriptionController.getTransactionHistory);
+
 // Export the controller for use in the main app.ts
 export { subscriptionController };
 export default router;

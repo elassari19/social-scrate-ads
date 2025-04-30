@@ -120,10 +120,18 @@ enum SubscriptionPlan {
   Business
 }
 
+// Add transaction types for deposit history
+enum TransactionType {
+  Deposit
+  Usage
+  Refund
+}
+
 model Subscription {
   id              String           @id @default(uuid())
   plan            SubscriptionPlan @default(Basic)
   status          String           @default("active")
+  balance         Float            @default(5.0)  // Default $5 for Basic/Freemium plan
   startDate       DateTime         @default(now())
   endDate         DateTime         @default(now())
   requestLimit    Int              @default(10)  // Monthly request limit
@@ -132,6 +140,18 @@ model Subscription {
   lastResetDate   DateTime         @default(now()) // For monthly reset
   user            User?            @relation(fields: [userId], references: [id])
   userId          String?          @unique
+  transactions    Transaction[]    // Transaction history for deposits and usage
+}
+
+// New model to track payment transactions
+model Transaction {
+  id              String           @id @default(uuid())
+  amount          Float            // Amount of transaction (positive for deposits, negative for usage)
+  type            TransactionType
+  description     String?
+  createdAt       DateTime         @default(now())
+  subscription    Subscription     @relation(fields: [subscriptionId], references: [id])
+  subscriptionId  String
 }
 
 model ScrapingJob {
