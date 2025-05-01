@@ -2,10 +2,12 @@
 
 import axios from 'axios';
 import { cookies } from 'next/headers';
+import { storeAuthTokens } from '@/lib/auth-service';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const SESSION_COOKIE_NAME = 'connect.sid'; // Match the actual cookie name from your backend
 const USER_COOKIE_NAME = 'user_data';
+const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token';
 
 interface LoginCredentials {
   email: string;
@@ -33,6 +35,16 @@ export async function login(credentials: LoginCredentials) {
     // Extract the user data correctly
     const userData = response.data.user || response.data;
 
+    // Extract tokens from response
+    const accessToken = response.data.accessToken || '';
+    const refreshToken = response.data.refreshToken || '';
+
+    // Store tokens and user data
+    await storeAuthTokens(accessToken, refreshToken, {
+      ...userData,
+      _timestamp: new Date().toISOString(),
+    });
+
     // Forward the cookie from the response to the client
     const setCookieHeader = response.headers['set-cookie'];
     if (setCookieHeader) {
@@ -51,14 +63,6 @@ export async function login(credentials: LoginCredentials) {
       }
     }
 
-    // Store user data in a cookie for easier access
-    (await cookies()).set(USER_COOKIE_NAME, JSON.stringify(userData), {
-      path: '/',
-      httpOnly: false, // Allow client-side access
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-    });
-
     return {
       user: userData,
       success: true,
@@ -75,6 +79,18 @@ export async function signup(credentials: SignupCredentials) {
     const response = await axios.post(`${API_URL}/auth/register`, credentials, {
       withCredentials: true,
     });
+
+    // Extract tokens from response
+    const accessToken = response.data.accessToken || '';
+    const refreshToken = response.data.refreshToken || '';
+
+    // Store tokens and user data
+    if (response.data) {
+      await storeAuthTokens(accessToken, refreshToken, {
+        ...response.data,
+        _timestamp: new Date().toISOString(),
+      });
+    }
 
     // Similar cookie handling as in the login function
     const setCookieHeader = response.headers['set-cookie'];
@@ -125,6 +141,7 @@ export async function logout() {
     // Always clear cookies directly
     (await cookies()).delete(SESSION_COOKIE_NAME);
     (await cookies()).delete(USER_COOKIE_NAME);
+    (await cookies()).delete(REFRESH_TOKEN_COOKIE_NAME);
   }
 }
 

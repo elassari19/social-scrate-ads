@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 // Cookie constants - not exported
 const SESSION_COOKIE_NAME = 'connect.sid';
 const USER_COOKIE_NAME = 'user_data';
+const REFRESH_TOKEN_COOKIE_NAME = 'refresh_token';
 
 // Default cookie options - not exported directly
 const defaultCookieOptions = {
@@ -60,11 +61,34 @@ export async function getSessionToken() {
 }
 
 /**
+ * Set refresh token in cookies
+ */
+export async function setRefreshToken(token: string) {
+  await setCookie(REFRESH_TOKEN_COOKIE_NAME, token, {
+    httpOnly: true, // Refresh tokens should be HttpOnly for security
+    maxAge: 30 * 24 * 60 * 60, // 30 days - longer than session token
+  });
+}
+
+/**
+ * Get refresh token from cookies
+ */
+export async function getRefreshToken() {
+  return getCookie(REFRESH_TOKEN_COOKIE_NAME);
+}
+
+/**
  * Set user data in cookies
  */
 export async function setUserData(userData: any) {
   try {
-    const userDataString = JSON.stringify(userData);
+    // Add timestamp to user data for expiry checking
+    const timestampedData = {
+      ...userData,
+      _timestamp: userData._timestamp || new Date().toISOString(),
+    };
+
+    const userDataString = JSON.stringify(timestampedData);
     await setCookie(USER_COOKIE_NAME, userDataString);
   } catch (error) {
     console.error('Error setting user data cookie:', error);
@@ -102,11 +126,31 @@ export async function isAuthenticated() {
 }
 
 /**
+ * Check if the session is expired based on timestamp
+ */
+export async function isSessionExpired(expiryTimeInSeconds = 7200) {
+  // Default 2 hours
+  const userData = await getUserData();
+
+  if (userData && userData._timestamp) {
+    const timestamp = new Date(userData._timestamp).getTime();
+    const now = Date.now();
+    const expiry = expiryTimeInSeconds * 1000; // Convert to milliseconds
+
+    return now - timestamp > expiry;
+  }
+
+  // If there's no timestamp, consider it expired
+  return true;
+}
+
+/**
  * Clear all session cookies
  */
 export async function clearSession() {
   await deleteCookie(SESSION_COOKIE_NAME);
   await deleteCookie(USER_COOKIE_NAME);
+  await deleteCookie(REFRESH_TOKEN_COOKIE_NAME);
 }
 
 /**
@@ -114,13 +158,23 @@ export async function clearSession() {
  */
 export async function refreshSession() {
   const token = await getCookie(SESSION_COOKIE_NAME);
-  const userData = await getCookie(USER_COOKIE_NAME);
+  const userData = await getUserData();
+  const refreshToken = await getCookie(REFRESH_TOKEN_COOKIE_NAME);
 
   if (token) {
     await setCookie(SESSION_COOKIE_NAME, token);
   }
 
   if (userData) {
-    await setCookie(USER_COOKIE_NAME, userData);
+    // Update the timestamp when refreshing the session
+    const updatedUserData = {
+      ...userData,
+      _timestamp: new Date().toISOString(),
+    };
+    await setUserData(updatedUserData);
+  }
+
+  if (refreshToken) {
+    await setRefreshToken(refreshToken);
   }
 }
