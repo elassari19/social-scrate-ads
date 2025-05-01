@@ -2,6 +2,7 @@ import React from 'react';
 import { getActorByNamespace, getActorRatings } from '@/app/api/actor';
 import { Edit, Star, Tag, User } from 'lucide-react';
 import Link from 'next/link';
+import ActorExecutor from '@/components/ui/actor-executor';
 
 interface IProps {
   params: Promise<{
@@ -147,11 +148,13 @@ async function page({ params }: IProps) {
           </div>
         )}
 
-        {/* Add a button to execute the actor (placeholder for future implementation) */}
+        {/* Execute Actor Button Section */}
         <div className="p-6 bg-gray-50 dark:bg-gray-900">
-          <button className="cursor-pointer bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md font-medium transition-colors">
-            Execute this Actor
-          </button>
+          <ActorExecutor
+            actorId={actorResponse.id}
+            actorTitle={actorResponse.title}
+            namespace={actorResponse.namespace}
+          />
         </div>
       </div>
     </div>

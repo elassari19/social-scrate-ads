@@ -1,8 +1,19 @@
 import { Request, Response } from 'express';
 import { ActorService } from './actor.service';
+import { createDeepSeekService, DeepSeekService } from '../../lib/deepseek';
+import { redisClient } from '../../lib/redis';
 
 export class ActorController {
-  constructor(private actorService: ActorService) {}
+  private deepSeekService: DeepSeekService;
+
+  constructor(private actorService: ActorService) {
+    // Initialize the DeepSeekService with Redis for caching
+    const redis = redisClient;
+    this.deepSeekService = createDeepSeekService(
+      process.env.DEEPSEEK_API_KEY,
+      redis
+    );
+  }
 
   getAllActors = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -152,26 +163,28 @@ export class ActorController {
     res: Response
   ): Promise<void> => {
     try {
+      // Get the namespace from request parameters
       const { namespace } = req.params;
-      const { prompt, additionalContext } = req.body;
+      const { platform, prompt, additionalContext } = req.body;
 
-      if (!prompt) {
-        res.status(400).json({ error: 'Prompt is required' });
-        return;
-      }
+      const urlPrompt = `Generate a valid URL based on the platform: ${platform},
+      the URL should be considering the user prompt information: ${prompt}.
+      Return ONLY a URL:
+      `;
 
-      // Create context object with prompt and any additional parameters
-      const context: Record<string, any> = {
-        userPrompt: prompt,
-        ...(additionalContext || {}),
-      };
+      console.log(`Executing with platform: ${platform || 'not specified'}`);
 
-      const result = await this.actorService.executeActorWithDeepSeek(
+      // Pass the namespace directly to the service
+      const generateUrl = await this.deepSeekService.generateUrl(
         namespace,
-        context
+        urlPrompt,
+        additionalContext
       );
 
-      res.json(result);
+      res.json({
+        url: generateUrl,
+        platform: platform || undefined,
+      });
     } catch (error) {
       console.error('Error executing actor with DeepSeek:', error);
       res.status(500).json({

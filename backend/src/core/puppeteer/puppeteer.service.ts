@@ -303,16 +303,26 @@ export class PuppeteerService {
     selectors: Record<string, string>;
     pagination?: any;
   }> {
-    // Specialized prompt for DeepSeek to generate URL and puppeteer script
+    // Specialized prompt for DeepSeek to generate URL and puppeteer script based on actor namespace
     const specializiedPrompt = `
-      Based on the actor type "${actorType}" (e.g., LinkedIn, Facebook, Twitter, etc.) and user prompt "${prompt}", 
-      generate a URL to scrape and a Puppeteer script to extract relevant data.
+      You are a web scraping expert for ${actorType}. A user needs to extract specific data based on their prompt.
       
-      Instructions:
-      1. Analyze the user's prompt to determine what data needs to be extracted
-      2. Create a valid URL for the ${actorType} platform that would contain this data
-      3. Define CSS selectors that can extract the required information
-      4. Create a script that ONLY contains selectors and pagination logic (no browser initialization or other configuration)
+      User prompt: "${prompt}"
+      
+      Based on this prompt and the platform "${actorType}" (e.g., LinkedIn, Facebook, Twitter, Instagram, etc.):
+      
+      1. Analyze what data the user needs to extract
+      2. Generate a valid, working URL for ${actorType} that would contain this data
+      3. Create a Puppeteer script that will execute on that URL to extract exactly what the user requested
+      4. Define all necessary CSS selectors to extract the relevant data
+      5. Include pagination handling if the data might span multiple pages
+      
+      The script should:
+      - Only contain the data extraction logic (browser setup is handled elsewhere)
+      - Follow the user's prompt instructions precisely
+      - Store all extracted data in a 'data' object
+      - Handle common errors that might occur during scraping
+      - Use modern Puppeteer best practices
       
       Return ONLY a JSON object with the following structure:
       {
@@ -320,16 +330,23 @@ export class PuppeteerService {
         "selectors": {
           "key1": "selector1",
           "key2": "selector2",
-          // Add as many selectors as needed
+          // Add all necessary selectors
         },
         "pagination": {
           "nextPageSelector": "selector for next page button if applicable",
           "maxPages": number of pages to scrape (default: 1)
         },
-        "script": "// Puppeteer script that uses page object to scrape data\\nconst data = {};\\n// Define selectors and extraction logic here\\n// Example: data.titles = await page.$$eval('.title', els => els.map(el => el.textContent.trim()));"
+        "script": "// Puppeteer script\\nconst data = {};\\n// Extraction logic here\\n// Make sure all requested data is stored in the data object"
       }
     `;
 
+    // Log the specialized prompt being sent to DeepSeek
+    console.log(
+      `Sending specialized prompt to DeepSeek for ${actorType}:`,
+      specializiedPrompt
+    );
+
+    // Send the specialized prompt to DeepSeek to generate the URL and script
     const result = await this.generateFromDeepSeek<{
       url: string;
       script: string;
@@ -337,10 +354,29 @@ export class PuppeteerService {
       pagination?: { nextPageSelector?: string; maxPages: number };
     }>(actorType, prompt, specializiedPrompt, additionalContext);
 
+    console.log(`Generated URL and script for ${actorType}:`, {
+      url: result.url,
+      scriptLength: result.script?.length || 0,
+      selectors: result.selectors,
+      pagination: result.pagination,
+    });
+
     // Validate the response
-    if (!result.url || !result.script || !result.selectors) {
+    if (!result.url) {
       throw new Error(
-        'DeepSeek failed to generate valid URL and scraping script'
+        `DeepSeek failed to generate a valid URL for ${actorType}`
+      );
+    }
+
+    if (!result.script) {
+      throw new Error(
+        `DeepSeek failed to generate a valid scraping script for ${actorType}`
+      );
+    }
+
+    if (!result.selectors || Object.keys(result.selectors).length === 0) {
+      throw new Error(
+        `DeepSeek failed to generate valid selectors for ${actorType}`
       );
     }
 

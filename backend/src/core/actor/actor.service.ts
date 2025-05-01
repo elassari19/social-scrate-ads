@@ -230,15 +230,28 @@ export class ActorService {
 
   // Execute actor with web content processing via DeepSeek
   async executeActorWithDeepSeek(
-    namespace: string,
+    actorIdentifier: string,
     context: Record<string, any>
   ): Promise<any> {
-    // Get the actor by namespace
-    const actor = await this.getActorByNamespace(namespace);
+    console.log('Executing actor with DeepSeek:', actorIdentifier, context);
 
+    // First try to find the actor by ID
+    let actor = await prisma.actor.findUnique({
+      where: { id: actorIdentifier },
+    });
+
+    // If not found by ID, try to find by namespace
     if (!actor) {
-      throw new Error(`Actor with namespace "${namespace}" not found`);
+      actor = await this.getActorByNamespace(actorIdentifier);
+
+      if (!actor) {
+        throw new Error(
+          `Actor with ID or namespace "${actorIdentifier}" not found`
+        );
+      }
     }
+
+    console.log('Found actor:', actor.title, actor.namespace, actor.id);
 
     // Create an execution record
     const execution = await prisma.actorExecution.create({
@@ -271,69 +284,10 @@ export class ActorService {
         );
 
       console.log(`Generated URL for ${actor.namespace}: ${url}`);
-      console.log(
-        `Generated script for ${actor.namespace}: ${script.substring(
-          0,
-          100
-        )}...`
-      );
-
-      // STEP 2: Use Puppeteer to navigate to the URL and execute the generated script
-      const page = await this.puppeteerService.createPage();
-      let scrapedData: Record<string, any> = {};
-
-      try {
-        // Navigate to the generated URL
-        await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
-
-        // Execute the script with pagination support
-        scrapedData = await this.executeScriptWithPagination(
-          page,
-          script,
-          pagination
-        );
-      } finally {
-        // Always close the page
-        await page.close();
-      }
-
-      // STEP 3: Process the scraped content with DeepSeek AI using the user's original prompt
-      const result = await this.puppeteerService.processWebContentWithDeepSeek(
-        url,
-        prompt,
-        {
-          additionalContext: {
-            ...context,
-            scrapedContent: scrapedData,
-            originalUrl: url,
-            selectors,
-          },
-        }
-      );
-
-      // Update execution record with results
-      const completedExecution = await prisma.actorExecution.update({
-        where: { id: execution.id },
-        data: {
-          status: 'completed',
-          endTime: new Date(),
-          results: result || {},
-        },
-      });
 
       return {
-        actor: {
-          id: actor.id,
-          name: actor.title,
-          namespace: actor.namespace,
-          url, // Return the generated URL, not the actor.url
-        },
+        url,
         executionId: execution.id,
-        context,
-        scrapedData,
-        selectors,
-        generatedScript: script,
-        result,
       };
     } catch (error) {
       // Update execution record with error

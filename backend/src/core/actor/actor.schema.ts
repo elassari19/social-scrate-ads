@@ -24,6 +24,7 @@ export const createActorSchema = z.object({
   prompts: z.record(z.string()).optional().default({}), // Additional prompts for AI analysis
   tags: z.array(z.string()).optional().default([]),
   dependencies: z.array(z.string()).optional().default([]),
+  platform: z.string().optional(), // Optional platform field for categorization
 });
 
 // Schema for updating an actor
@@ -51,6 +52,7 @@ export const updateActorSchema = z.object({
   prompts: z.record(z.string()).optional(),
   tags: z.array(z.string()).optional(),
   dependencies: z.array(z.string()).optional(),
+  platform: z.string().optional(), // Optional platform field for categorization
 });
 
 // Schema for actor rating
@@ -75,15 +77,11 @@ export const executeActorSchema = z.object({
   }),
 });
 
-// Schema for DeepSeek AI integration - updated to require only prompt
+// Schema for DeepSeek AI integration
 export const deepSeekActorSchema = z.object({
-  params: z.object({
-    namespace: z.string().min(1, 'Actor namespace is required'),
-  }),
-  body: z.object({
-    prompt: z.string().min(1, 'Prompt is required'),
-    additionalContext: z.record(z.any()).optional(),
-  }),
+  platform: z.string().min(3, 'Platform is required'),
+  prompt: z.string().min(20, 'Prompt is required'),
+  additionalContext: z.record(z.any()).optional().default({}),
 });
 
 // Custom type definitions based on the schemas

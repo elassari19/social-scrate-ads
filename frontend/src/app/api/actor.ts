@@ -100,35 +100,167 @@ export async function getActorByNamespace(namespace: string) {
 }
 
 /**
- * Execute an actor
+ * Execute an actor with DeepSeek AI
  */
-export async function executeActor(id: number, payload: any) {
+export async function executeActorWithDeepSeek(
+  namespace: string,
+  platform: string,
+  prompt: string,
+  additionalContext?: Record<string, any>
+) {
   try {
     // Get authentication headers
     const authHeaders = await getAuthHeaders();
 
+    console.log(
+      `Executing actor with namespace ${namespace} using DeepSeek and prompt: ${prompt}`
+    );
+
+    console.log('Sending payload to DeepSeek API:');
+
     const response = await axios.post(
-      `${API_URL}/actors/${id}/execute`,
-      payload,
+      `${API_URL}/actors/namespace/${namespace}/deepseek`,
+      {
+        platform: platform,
+        prompt: prompt,
+        additionalContext: {
+          ...additionalContext,
+        },
+      },
       {
         withCredentials: true,
-        headers: authHeaders,
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
       }
     );
 
     if (response.status !== 200) {
-      throw new Error('Failed to execute actor');
+      throw new Error(
+        `Failed to execute actor with DeepSeek: ${response.statusText}`
+      );
     }
 
     return {
       success: true,
       data: response.data,
     };
-  } catch (error) {
-    console.error(`Error executing actor with ID ${id}:`, error);
+  } catch (error: any) {
+    console.error(
+      `Error executing actor with namespace ${namespace} using DeepSeek:`,
+      error
+    );
+
+    // Add more detailed error information
+    let errorMessage = 'Failed to execute actor with DeepSeek';
+
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      errorMessage =
+        error.response.data?.message ||
+        error.response.data?.error ||
+        `Error ${error.response.status}: ${error.response.statusText}`;
+    } else if (error.request) {
+      console.error('No response received from server');
+      errorMessage = 'No response received from server';
+    } else {
+      console.error('Error message:', error.message);
+      errorMessage = error.message;
+    }
+
     return {
       success: false,
-      error: 'Failed to execute actor',
+      error: errorMessage,
+    };
+  }
+}
+
+/**
+ * Execute an actor
+ */
+export async function executeActor(id: string | number, payload: any) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    // Ensure we're using the proper URL format and ID
+    const actorId = typeof id === 'string' ? id : id.toString();
+
+    console.log(
+      `Executing actor ${actorId} with payload:`,
+      JSON.stringify(payload)
+    );
+
+    // Check if the payload is in the format for the DeepSeek API
+    if (payload.options?.prompt && !payload.prompt) {
+      // Convert the payload to match the expected format for the DeepSeek API
+      const deepSeekPayload = {
+        prompt: payload.options.prompt,
+        additionalContext: payload.options.additionalContext || {},
+      };
+
+      const response = await axios.post(
+        `${API_URL}/actors/${actorId}/execute`,
+        deepSeekPayload,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+          },
+        }
+      );
+
+      if (response.status !== 200) {
+        throw new Error('Failed to execute actor');
+      }
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    } else {
+      // Use the payload as is
+      const response = await axios.post(
+        `${API_URL}/actors/${actorId}/execute`,
+        payload,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders,
+          },
+        }
+      );
+
+      if (response.status !== 200) {
+        throw new Error('Failed to execute actor');
+      }
+
+      return {
+        success: true,
+        data: response.data,
+      };
+    }
+  } catch (error: any) {
+    console.error(`Error executing actor with ID ${id}:`, error);
+
+    // Add more detailed error information
+    let errorMessage = 'Failed to execute actor';
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      errorMessage =
+        error.response.data?.message ||
+        error.response.data?.error ||
+        errorMessage;
+    }
+
+    return {
+      success: false,
+      error: errorMessage,
     };
   }
 }
