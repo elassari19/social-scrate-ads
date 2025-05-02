@@ -200,9 +200,9 @@ async function page({ params }: IProps) {
         {/* Execute Actor Button Section */}
         <div className="p-6 bg-gray-50 dark:bg-gray-900">
           <ActorExecutor
-            actorId={actorResponse.id}
-            actorTitle={actorResponse.title}
             namespace={actorResponse.namespace}
+            actorTitle={actorResponse.title}
+            platformUrl={actorResponse.url}
           />
         </div>
       </div>

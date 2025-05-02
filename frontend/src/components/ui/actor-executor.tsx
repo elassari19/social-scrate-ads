@@ -12,26 +12,26 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Code, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { executeActorWithDeepSeek } from '@/app/api/actor';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface ActorExecutorProps {
-  actorId: string;
-  actorTitle: string;
   namespace: string;
+  actorTitle: string;
+  platformUrl: string;
 }
 
 export default function ActorExecutor({
-  actorId,
-  actorTitle,
   namespace,
+  actorTitle,
+  platformUrl,
 }: ActorExecutorProps) {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [platform, setPlatform] = useState('');
+  const [platform, setPlatform] = useState(platformUrl);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
 
@@ -43,7 +43,7 @@ export default function ActorExecutor({
       // Use the executeActorWithDeepSeek function which is specifically designed for this API
       const { success, data, error } = await executeActorWithDeepSeek(
         namespace,
-        platform.trim(),
+        platform,
         prompt.trim(),
         {
           actorType: 'generic',
@@ -61,8 +61,8 @@ export default function ActorExecutor({
 
       toast.success(`Actor "${actorTitle}" executed successfully!`);
 
-      // Close the dialog after successful submission
-      setOpen(false);
+      // No longer closing the dialog after successful submission
+      // so the user can see the results
     } catch (error) {
       console.error('Error executing actor:', error);
       toast.error(
@@ -70,6 +70,36 @@ export default function ActorExecutor({
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle using existing Puppeteer script to scrape
+  const handleUseExistingScript = () => {
+    try {
+      toast.info('Preparing to use existing Puppeteer script...');
+      // Add your logic to use existing Puppeteer script
+      // You would typically redirect or open another dialog here
+
+      // For demonstration, we're just showing a toast
+      toast.success('Using existing Puppeteer script with the actor results');
+    } catch (error) {
+      console.error('Error using existing Puppeteer script:', error);
+      toast.error('Failed to use existing Puppeteer script');
+    }
+  };
+
+  // Handle generating new Puppeteer script
+  const handleGenerateNewScript = () => {
+    try {
+      toast.info('Preparing to generate a new Puppeteer script...');
+      // Add your logic to generate new Puppeteer script
+      // You would typically redirect or open another dialog here
+
+      // For demonstration, we're just showing a toast
+      toast.success('Generating new Puppeteer script based on actor results');
+    } catch (error) {
+      console.error('Error generating new Puppeteer script:', error);
+      toast.error('Failed to generate new Puppeteer script');
     }
   };
 
@@ -87,10 +117,13 @@ export default function ActorExecutor({
       <Dialog
         open={open}
         onOpenChange={(newOpen) => {
-          if (!loading) setOpen(newOpen);
+          if (!loading) {
+            setOpen(newOpen);
+            if (!newOpen) setResult(null); // Reset result when closing
+          }
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Execute {actorTitle}</DialogTitle>
             <DialogDescription>
@@ -100,10 +133,10 @@ export default function ActorExecutor({
 
           <div className="mt-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="platform">Platform</Label>
+              <Label htmlFor="platform">Platform URL</Label>
               <Input
                 id="platform"
-                placeholder="Enter target platform (e.g., facebook, twitter, linkedin)"
+                placeholder="Enter target platform URL (e.g., facebook, twitter, linkedin)"
                 value={platform}
                 onChange={(e) => setPlatform(e.target.value)}
                 disabled={loading}
@@ -121,34 +154,74 @@ export default function ActorExecutor({
                 disabled={loading}
               />
             </div>
+
+            {/* Display results inside the dialog when available */}
+            {result && (
+              <>
+                <div className="mt-6 p-4 border rounded-md bg-gray-50 max-h-[40vh] overflow-y-auto">
+                  <div>
+                    <h3 className="font-medium">Your Prompt:</h3>
+                    <pre className="mt-2 whitespace-pre-wrap text-sm">
+                      {result?.prompt}
+                    </pre>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Your Scraped URL:</h3>
+                    <pre className="mt-2 whitespace-pre-wrap text-sm">
+                      {result?.url}
+                    </pre>
+                  </div>
+                </div>
+
+                {/* New Puppeteer script buttons */}
+                <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={handleUseExistingScript}
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                  >
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Scrape with Existing Puppeteer Script
+                  </Button>
+                  <Button
+                    onClick={handleGenerateNewScript}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Code className="mr-2 h-4 w-4" />
+                    Generate New Puppeteer Script
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter className="mt-6">
             <DialogClose asChild>
               <Button variant="outline" disabled={loading}>
-                Cancel
+                {result ? 'Close' : 'Cancel'}
               </Button>
             </DialogClose>
-            <Button
-              type="submit"
-              onClick={handleExecuteActor}
-              disabled={!prompt.trim() || loading}
-              className="bg-orange-600 hover:bg-orange-700"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                'Submit Prompt'
-              )}
-            </Button>
+            {!result && (
+              <Button
+                type="submit"
+                onClick={handleExecuteActor}
+                disabled={!prompt.trim() || loading}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Submit Prompt'
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Optional: Display results component if you want to show results directly in this component */}
+      {/* Keeping the results component outside the dialog as well for reference */}
       {result && (
         <div className="mt-4 p-4 border rounded-md bg-gray-50">
           <h3 className="font-medium">Execution Result:</h3>

@@ -61,14 +61,14 @@ export const executeActorSchema = z.object({
     id: z.string().uuid('Invalid actor ID'),
   }),
   body: z.object({
-    url: z.string().url('Invalid URL').optional(),
+    platformUrl: z.string().url('Invalid URL').optional(),
     options: z.record(z.any()).optional(),
   }),
 });
 
 // Schema for DeepSeek AI integration
 export const deepSeekActorSchema = z.object({
-  platform: z.string().min(3, 'Platform is required'),
+  platformUrl: z.string().min(3, 'Platform is required'),
   prompt: z.string().min(20, 'Prompt is required'),
   additionalContext: z.record(z.any()).optional().default({}),
 });

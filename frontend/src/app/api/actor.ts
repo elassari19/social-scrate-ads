@@ -104,7 +104,7 @@ export async function getActorByNamespace(namespace: string) {
  */
 export async function executeActorWithDeepSeek(
   namespace: string,
-  platform: string,
+  platformUrl: string,
   prompt: string,
   additionalContext?: Record<string, any>
 ) {
@@ -121,7 +121,7 @@ export async function executeActorWithDeepSeek(
     const response = await axios.post(
       `${API_URL}/actors/namespace/${namespace}/deepseek`,
       {
-        platform: platform,
+        platformUrl: platformUrl,
         prompt: prompt,
         additionalContext: {
           ...additionalContext,

@@ -165,25 +165,28 @@ export class ActorController {
     try {
       // Get the namespace from request parameters
       const { namespace } = req.params;
-      const { platform, prompt, additionalContext } = req.body;
+      const { platformUrl, prompt, additionalContext } = req.body;
 
-      const urlPrompt = `Generate a valid URL based on the platform: ${platform},
-      the URL should be considering the user prompt information: ${prompt}.
-      Return ONLY a URL:
+      const urlPrompt = `Update the URL ${platformUrl} queries,
+      - the URL should be following the user prompt: ${prompt}.
+      - The URL should be a valid URL that can be used to fetch data from the platform.
+      - The Prompt can have multiple requirements like: location, limit, offset, filters, etc.
+      - The URL should be in the format of ${platformUrl}.
+      - Return ONLY a URL:
       `;
 
-      console.log(`Executing with platform: ${platform || 'not specified'}`);
+      console.log(`Executing with platform: ${platformUrl || 'not specified'}`);
 
       // Pass the namespace directly to the service
       const generateUrl = await this.deepSeekService.generateUrl(
-        namespace,
+        platformUrl,
         urlPrompt,
         additionalContext
       );
 
       res.json({
+        prompt,
         url: generateUrl,
-        platform: platform || undefined,
       });
     } catch (error) {
       console.error('Error executing actor with DeepSeek:', error);

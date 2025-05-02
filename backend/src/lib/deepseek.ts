@@ -136,20 +136,14 @@ export class DeepSeekService {
    * Generate URL based on namespace and prompt
    */
   async generateUrl(
-    namespace: string,
+    platformUrl: string,
     prompt: string,
     additionalContext: Record<string, any> = {}
   ): Promise<string> {
-    const urlPrompt = `Generate a valid URL based on the actor namespace/platform: ${namespace},
-      the URL should be considering the user prompt information: ${prompt}.
-      Return ONLY a URL string with no additional text or explanation.
-    `;
-
     const result = await this.callDeepSeekAPI(
-      urlPrompt,
+      prompt,
       {
-        namespace,
-        prompt,
+        platformUrl,
         ...additionalContext,
       },
       {

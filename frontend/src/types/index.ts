@@ -11,6 +11,7 @@ export interface Actor {
   averageRating?: number;
   authorName: string;
   icon: string;
-  url?: string; // Add URL field as optional
+  url: string;
+  price: number;
   tags: string[];
 }

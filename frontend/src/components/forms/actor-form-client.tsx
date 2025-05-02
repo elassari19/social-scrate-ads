@@ -22,7 +22,7 @@ const actorSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   icon: z.string().url().min(10, 'Icon URL is required'),
   url: z.string().url('Must be a valid URL').min(20, 'URL is required'),
-  price: z.number().int().min(0).default(1000), // Add price field
+  price: z.number().int().min(1, 'Price must be at least 1'),
   tags: z.array(z.string()).optional(),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   pageContent: z.string().optional(),
