@@ -10,11 +10,6 @@ interface IProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const ActorCard = ({ actor, className }: IProps) => {
-  // Format the rating to display nicely (show only 1 decimal place if needed)
-  // const formattedRating = actor.averageRating
-  //   ? actor.averageRating.toFixed(1).replace(/\.0$/, '')
-  //   : '-';
-
   return (
     <Link
       href={`/store/actors/${actor.namespace}`}

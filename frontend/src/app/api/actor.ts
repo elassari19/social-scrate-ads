@@ -579,7 +579,13 @@ export async function updateActor(id: string, actorData: Partial<Actor>) {
     // Get authentication headers
     const authHeaders = await getAuthHeaders();
 
-    const response = await axios.put(`${API_URL}/actors/${id}`, actorData, {
+    // Make sure URL is properly included in the request
+    const dataToSend = {
+      ...actorData,
+      url: actorData.url || undefined, // Include URL or explicitly set as undefined
+    };
+
+    const response = await axios.put(`${API_URL}/actors/${id}`, dataToSend, {
       withCredentials: true,
       headers: {
         'Content-Type': 'application/json',

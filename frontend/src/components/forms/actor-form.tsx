@@ -18,9 +18,9 @@ export default async function ActorForm({ namespace }: ActorFormProps) {
       initialData = {
         id: actorResponse.data.id,
         title: actorResponse.data.title,
-        namespace: actorResponse.data.namespace,
         description: actorResponse.data.description,
         icon: actorResponse.data.icon,
+        url: actorResponse.data.url,
         tags: actorResponse.data.tags,
         pageContent: actorResponse.data.page || '',
       };

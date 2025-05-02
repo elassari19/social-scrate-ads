@@ -3,16 +3,11 @@ import { z } from 'zod';
 // Schema for creating a new actor
 export const createActorSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  namespace: z
-    .string()
-    .min(1, 'Namespace is required')
-    .regex(
-      /^[a-z0-9-]+$/,
-      'Namespace must contain only lowercase letters, numbers, and hyphens'
-    ),
   description: z.string().min(1, 'Description is required'),
   authorName: z.string().min(1, 'Author name is required'),
   icon: z.string(),
+  url: z.string().url('Must be a valid URL').optional(),
+  price: z.number().int().min(0).default(5), // Add price field with validation
   page: z
     .any()
     .optional()
@@ -30,17 +25,11 @@ export const createActorSchema = z.object({
 // Schema for updating an actor
 export const updateActorSchema = z.object({
   title: z.string().min(1, 'Title is required').optional(),
-  namespace: z
-    .string()
-    .min(1, 'Namespace is required')
-    .regex(
-      /^[a-z0-9-]+$/,
-      'Namespace must contain only lowercase letters, numbers, and hyphens'
-    )
-    .optional(),
   description: z.string().min(1, 'Description is required').optional(),
   authorName: z.string().min(1, 'Author name is required').optional(),
   icon: z.string().url().optional(),
+  url: z.string().url('Must be a valid URL').optional(),
+  price: z.number().min(0).optional(), // Add optional price field
   page: z
     .any()
     .optional()

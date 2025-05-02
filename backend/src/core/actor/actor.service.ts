@@ -86,10 +86,12 @@ export class ActorService {
     return prisma.actor.create({
       data: {
         title: actorData.title,
-        namespace: actorData.namespace,
+        namespace: actorData.title.toLowerCase().replace(/\s+/g, '-'),
         description: actorData.description,
         authorName: actorData.authorName,
         icon: actorData.icon,
+        url: actorData.url,
+        price: actorData.price || 5, // Set price with default 1000
         tags,
         page: JSON.parse(JSON.stringify(page)),
         userId,
@@ -149,23 +151,20 @@ export class ActorService {
     });
   }
 
-  async executeActor(
-    actorId: string,
-    options?: Record<string, any>
-  ): Promise<any> {
-    // Create an execution record
+  async executeActor(id: string, options?: any): Promise<any> {
     const actor = await prisma.actor.findUnique({
-      where: { id: actorId },
+      where: { id },
     });
 
     if (!actor) {
       throw new Error('Actor not found');
     }
 
+    // Create a new execution record
     const execution = await prisma.actorExecution.create({
       data: {
-        status: 'pending',
-        actorId,
+        actorId: id,
+        status: 'running',
       },
     });
 

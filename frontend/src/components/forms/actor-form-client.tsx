@@ -20,17 +20,11 @@ import { Actor } from '../../types';
 // Actor build form schema
 const actorSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
-  namespace: z
-    .string()
-    .min(3, 'Namespace must be at least 3 characters')
-    .max(50, 'Namespace must be less than 50 characters')
-    .regex(
-      /^[a-z0-9-]+$/,
-      'Namespace can only contain lowercase letters, numbers, and hyphens'
-    ),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
   icon: z.string().url().min(10, 'Icon URL is required'),
+  url: z.string().url('Must be a valid URL').min(20, 'URL is required'),
+  price: z.number().int().min(0).default(1000), // Add price field
   tags: z.array(z.string()).optional(),
+  description: z.string().min(10, 'Description must be at least 10 characters'),
   pageContent: z.string().optional(),
 });
 
@@ -56,6 +50,8 @@ export function ActorFormClient({
     namespace: '',
     description: '',
     icon: '',
+    url: '',
+    price: 5,
     tags: [],
     pageContent: `// Example page DOM to scrape a website
       <main><div><h1>Example Title</h1><p>Example description</p></d></main> `,
@@ -102,9 +98,9 @@ export function ActorFormClient({
       if (!isEditing) {
         form.reset({
           title: '',
-          namespace: '',
           description: '',
           icon: '',
+          url: '',
           tags: [],
           pageContent: `// Example page DOM to scrape a website using AI
 `,
@@ -184,21 +180,46 @@ export function ActorFormClient({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="namespace">
-                Namespace
-                <span className="text-xs text-gray-500 ml-1">
-                  (unique identifier, lowercase with hyphens)
-                </span>
-              </Label>
+              <Label htmlFor="price">Price (per 1000 result)</Label>
               <Input
-                id="namespace"
-                placeholder="my-awesome-actor"
-                {...form.register('namespace')}
-                disabled={isEditing}
+                id="price"
+                type="number"
+                defaultValue={5}
+                min={0}
+                {...form.register('price', { valueAsNumber: true })}
               />
-              {form.formState.errors.namespace && (
+              {form.formState.errors.price && (
                 <p className="text-sm text-red-500">
-                  {form.formState.errors.namespace.message}
+                  {form.formState.errors.price.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1">
+            <div className="space-y-2">
+              <Label htmlFor="url">URL</Label>
+              <Input
+                id="url"
+                placeholder="https://example.com"
+                {...form.register('url')}
+              />
+              {form.formState.errors.url && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.url.message}
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="icon">Icon (emoji)</Label>
+              <Input
+                id="icon"
+                placeholder="Icon URL"
+                {...form.register('icon')}
+              />
+              {form.formState.errors.icon && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.icon.message}
                 </p>
               )}
             </div>
@@ -217,22 +238,6 @@ export function ActorFormClient({
                 {form.formState.errors.description.message}
               </p>
             )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="icon">Icon (emoji)</Label>
-              <Input
-                id="icon"
-                placeholder="Icon URL"
-                {...form.register('icon')}
-              />
-              {form.formState.errors.icon && (
-                <p className="text-sm text-red-500">
-                  {form.formState.errors.icon.message}
-                </p>
-              )}
-            </div>
           </div>
 
           <div className="space-y-2">

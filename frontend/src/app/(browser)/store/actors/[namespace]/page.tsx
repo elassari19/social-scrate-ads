@@ -1,8 +1,9 @@
 import React from 'react';
 import { getActorByNamespace, getActorRatings } from '@/app/api/actor';
-import { Edit, Star, Tag, User } from 'lucide-react';
+import { Code, CreditCard, Edit, Globe, Star, Tag, User } from 'lucide-react';
 import Link from 'next/link';
 import ActorExecutor from '@/components/ui/actor-executor';
+import { Card } from '@/components/ui/card';
 
 interface IProps {
   params: Promise<{
@@ -32,12 +33,12 @@ async function page({ params }: IProps) {
   }
 
   return (
-    <div className="container mx-auto px-4 py-16 md:py-24">
+    <div className="container max-w-4xl mx-auto px-4 py-16 md:py-24">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
         {/* Header with icon and title */}
         <div className="flex items-center p-6 border-b border-gray-200 dark:border-gray-700">
           {actorResponse.icon && (
-            <div className="w-16 h-16 mr-4 relative">
+            <div className="w-16 h-16 mr-4 relative rounded-md border p-2">
               <img
                 src={actorResponse.icon}
                 alt={actorResponse.title}
@@ -49,11 +50,21 @@ async function page({ params }: IProps) {
           )}
           <div className="flex-1">
             <h1 className="text-3xl font-bold">{actorResponse.title}</h1>
-            <div className="flex items-center mt-2">
-              <User className="w-4 h-4 mr-1" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                by {actorResponse.authorName}
-              </span>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center">
+                <User className="w-4 h-4 mr-1" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  by {actorResponse.authorName}
+                </span>
+              </div>
+
+              {/* Price display */}
+              <div className="flex items-center">
+                <CreditCard className="w-4 h-4 mr-1 text-green-600" />
+                <span className="text-sm font-medium text-green-600">
+                  {actorResponse?.price || 5}$ per each 1000 results
+                </span>
+              </div>
 
               {actorResponse.averageRating && (
                 <div className="flex items-center ml-4">
@@ -68,9 +79,9 @@ async function page({ params }: IProps) {
           <div className="">
             <Link
               href={`/store/actors/${namespace}/edit`}
-              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center"
+              className="border border-orange-600 hover:bg-orange-700 text-orange-600 hover:text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center"
             >
-              <Edit className="w-4 h-4 mr-1 text-white" />
+              <Edit className="w-4 h-4 mr-1 text-ornage-600 hover:text-white" />
               Edit Actor
             </Link>
           </div>
@@ -83,6 +94,24 @@ async function page({ params }: IProps) {
             {actorResponse.description}
           </p>
         </div>
+
+        {/* URL (if available) */}
+        {actorResponse?.url && (
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-semibold mb-2">Platform URL</h2>
+            <div className="flex items-center">
+              <Globe className="w-4 h-4 mr-2 text-blue-500" />
+              <a
+                href={actorResponse.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline break-all"
+              >
+                {actorResponse.url}
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Tags */}
         {actorResponse.tags && actorResponse.tags.length > 0 && (
@@ -99,6 +128,26 @@ async function page({ params }: IProps) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Puppeteer Script */}
+        {actorResponse.page && (
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center mb-2">
+              <h2 className="text-xl font-semibold">Puppeteer Script</h2>
+              <Code className="w-5 h-5 ml-2 text-gray-500" />
+            </div>
+            <Card className="bg-gray-50 dark:bg-gray-900 p-4 overflow-x-auto">
+              <pre className="text-sm font-mono whitespace-pre-wrap break-words text-gray-800 dark:text-gray-200">
+                {typeof actorResponse.page === 'string'
+                  ? actorResponse.page
+                  : JSON.stringify(actorResponse.page, null, 2)}
+              </pre>
+            </Card>
+            <p className="mt-2 text-sm text-gray-500">
+              This is the scraping script that runs when you execute this actor.
+            </p>
           </div>
         )}
 

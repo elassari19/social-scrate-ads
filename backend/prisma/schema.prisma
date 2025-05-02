@@ -33,6 +33,8 @@ model Actor {
   description      String
   authorName       String
   icon             String
+  url              String?        // Optional URL for the Actor
+  price            Int            @default(1000) // Add price field with default 1000
   tags             String[]
   page             Json?          // Puppeteer script for scraping
   createdAt        DateTime       @default(now())
