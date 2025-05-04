@@ -51,19 +51,25 @@ export function createActorRoutes(actorController: ActorController): Router {
   // Delete actor
   router.delete('/:id', clearCache('actors*'), actorController.deleteActor);
 
-  // Execute actor
-  router.post(
-    '/:id/execute',
-    validate(executeActorSchema),
-    actorController.executeActor
-  );
-
   // Execute actor with DeepSeek AI
   router.post(
     '/namespace/:namespace/deepseek',
     validate(deepSeekActorSchema),
-    actorController.executeActorWithDeepSeek
+    actorController.generateActorUrl
   );
+
+  // Get actor prompts
+  router.get(
+    '/namespace/:namespace/prompts',
+    cacheMiddleware(60), // Cache for 1 minute
+    actorController.getActorPrompt
+  );
+
+  // Update a prompt
+  router.put('/prompts/:id', isAuthenticated, actorController.updatePrompt);
+
+  // Delete a prompt
+  router.delete('/prompts/:id', isAuthenticated, actorController.deletePrompt);
 
   // Get actor executions
   router.get(

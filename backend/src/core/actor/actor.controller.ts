@@ -144,66 +144,112 @@ export class ActorController {
     }
   };
 
-  executeActor = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { id } = req.params;
-      const { options } = req.body;
-
-      // We no longer need the URL from the request body, as we'll use the one stored in the actor model
-      const result = await this.actorService.executeActor(id, options);
-      res.json(result);
-    } catch (error) {
-      console.error('Error executing actor:', error);
-      res.status(500).json({ error: 'Failed to execute actor' });
-    }
-  };
-
-  executeActorWithDeepSeek = async (
-    req: Request,
-    res: Response
-  ): Promise<void> => {
+  generateActorUrl = async (req: Request, res: Response): Promise<void> => {
     try {
       // Get the namespace from request parameters
       const { namespace } = req.params;
       const { platformUrl, prompt, additionalContext } = req.body;
-
-      const urlPrompt = `Update the URL ${platformUrl} queries,
-      - the URL should be following the user prompt: ${prompt}.
-      - The URL should be a valid URL that can be used to fetch data from the platform.
-      - The Prompt can have multiple requirements like: location, limit, offset, filters, etc.
-      - The URL should be in the format of ${platformUrl}.
-      - Return ONLY a URL:
-      `;
-
-      console.log(`Executing with platform: ${platformUrl || 'not specified'}`);
+      const userId = req.user?.id;
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
 
       // Pass the namespace directly to the service
-      const generateUrl = await this.deepSeekService.generateUrl(
+      const generateUrl = await this.actorService.generateActorUrl(
+        namespace,
         platformUrl,
-        urlPrompt,
-        additionalContext
+        prompt,
+        additionalContext,
+        userId
       );
 
-      res.json({
-        prompt,
-        url: generateUrl,
-      });
+      res.status(201).json(generateUrl);
     } catch (error) {
-      console.error('Error executing actor with DeepSeek:', error);
+      console.error('Error genearting actor URL with DeepSeek:', error);
       res.status(500).json({
-        error: 'Failed to execute actor with DeepSeek AI',
+        error: 'Failed to generate actor URL with DeepSeek AI',
         message: error instanceof Error ? error.message : String(error),
       });
     }
   };
 
-  getActorExecutions = async (req: Request, res: Response): Promise<void> => {
+  getActorPrompt = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { namespace } = req.params;
+      const prompts = await this.actorService.getActorPrompt(namespace);
+
+      if (!prompts) {
+        res.status(404).json({ error: 'Prompts not found' });
+        return;
+      }
+
+      res.json(prompts);
+    } catch (error) {
+      console.error('Error fetching actor prompts:', error);
+      res.status(500).json({ error: 'Failed to fetch actor prompts' });
+    }
+  };
+
+  updatePrompt = async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
+      const { prompt } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const updatedPrompt = await this.actorService.updatePrompt(id, userId, {
+        prompt,
+      });
+
+      res.json(updatedPrompt);
+    } catch (error) {
+      console.error('Error updating prompt:', error);
+
+      if (error instanceof Error && error.message.includes('not found')) {
+        res.status(404).json({ error: error.message });
+        return;
+      }
+
+      res.status(500).json({ error: 'Failed to update prompt' });
+    }
+  };
+
+  deletePrompt = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      await this.actorService.deletePrompt(id, userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting prompt:', error);
+
+      if (error instanceof Error && error.message.includes('not found')) {
+        res.status(404).json({ error: error.message });
+        return;
+      }
+
+      res.status(500).json({ error: 'Failed to delete prompt' });
+    }
+  };
+
+  getActorExecutions = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { namespace } = req.params;
       const { limit } = req.query;
 
       const executions = await this.actorService.getActorExecutions(
-        id,
+        namespace,
         limit ? parseInt(limit as string, 10) : 10
       );
 

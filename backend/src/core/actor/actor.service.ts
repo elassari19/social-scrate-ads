@@ -1,10 +1,29 @@
-import { Actor, PrismaClient, Prisma, ActorRating } from '@prisma/client';
+import {
+  Actor,
+  PrismaClient,
+  Prisma,
+  ActorRating,
+  ActorPrompt,
+} from '@prisma/client';
 import { PuppeteerService } from '../puppeteer/puppeteer.service';
+import { createDeepSeekService, DeepSeekService } from '../../lib/deepseek';
+import { redisClient } from '../../lib/redis';
 
 const prisma = new PrismaClient();
 
 export class ActorService {
-  constructor(private puppeteerService: PuppeteerService) {}
+  private deepSeekService: DeepSeekService;
+  constructor(
+    private actorService: ActorService,
+    private puppeteerService: PuppeteerService
+  ) {
+    // Initialize the DeepSeekService with Redis for caching
+    const redis = redisClient;
+    this.deepSeekService = createDeepSeekService(
+      process.env.DEEPSEEK_API_KEY,
+      redis
+    );
+  }
 
   async getAllActors(
     userId?: string,
@@ -149,6 +168,107 @@ export class ActorService {
     return prisma.actor.delete({
       where: { id },
     });
+  }
+
+  async generateActorUrl(
+    namespace: string,
+    platformUrl: string,
+    prompt: string,
+    context: Record<string, any>,
+    userId: string
+  ) {
+    try {
+      const urlPrompt = `Update the URL ${platformUrl} queries,
+      - the URL should be following the user prompt: ${prompt}.
+      - The URL should be a valid URL that can be used to fetch data from the platform.
+      - The Prompt can have multiple requirements like: location, limit, offset, filters, etc.
+      - The URL should be in the format of ${platformUrl}.
+      - Return ONLY a URL:
+      `;
+      // Generate a URL based on the platform URL
+      const generateUrl = await this.deepSeekService.generateUrl(
+        platformUrl,
+        urlPrompt,
+        context
+      );
+
+      await prisma.actorPrompt.create({
+        data: {
+          namespace,
+          userId,
+          responseUrl: generateUrl,
+          prompt,
+        },
+      });
+
+      return generateUrl;
+    } catch (error) {
+      console.error('Error generating actor URL:', error);
+      throw new Error('Failed to generate actor URL');
+    }
+  }
+
+  // ==================   PROMPTS   ===========================
+  async getActorPrompt(namespace: string) {
+    return prisma.actorPrompt.findMany({
+      where: { namespace },
+    });
+  }
+
+  // Update a prompt
+  async updatePrompt(
+    id: string,
+    userId: string,
+    data: { prompt?: string }
+  ): Promise<ActorPrompt> {
+    // Verify ownership
+    const existingPrompt = await prisma.actorPrompt.findFirst({
+      where: { id, userId },
+    });
+
+    if (!existingPrompt) {
+      throw new Error(
+        'Prompt not found or you do not have permission to update it'
+      );
+    }
+
+    const urlPrompt = `Update the URL ${existingPrompt.responseUrl} queries,
+    - the URL should be following the user prompt: ${data.prompt}.
+    - The URL should be a valid URL that can be used to fetch data from the platform.
+    - The Prompt can have multiple requirements like: location, limit, offset, filters, etc.
+    - The URL should be in the format of ${existingPrompt.namespace}.
+    - Return ONLY a URL:
+    `;
+    // Generate a URL based on the platform URL
+    const generateUrl = await this.deepSeekService.generateUrl(
+      existingPrompt.responseUrl!,
+      urlPrompt
+    );
+
+    return prisma.actorPrompt.update({
+      where: { id },
+      data: {
+        prompt: data.prompt !== undefined ? data.prompt : existingPrompt.prompt,
+        responseUrl: generateUrl,
+      },
+    });
+  }
+
+  // Delete a prompt
+  async deletePrompt(id: string, userId: string): Promise<boolean> {
+    // Verify ownership
+    const prompt = await prisma.actorPrompt.findFirst({
+      where: { id, userId },
+    });
+
+    if (!prompt) {
+      throw new Error(
+        'Prompt not found or you do not have permission to delete it'
+      );
+    }
+
+    await prisma.actorPrompt.delete({ where: { id } });
+    return true;
   }
 
   async executeActor(id: string, options?: any): Promise<any> {
@@ -400,9 +520,9 @@ export class ActorService {
     return merged;
   }
 
-  async getActorExecutions(actorId: string, limit = 10): Promise<any[]> {
+  async getActorExecutions(id: string, limit = 10): Promise<any[]> {
     return prisma.actorExecution.findMany({
-      where: { actorId },
+      where: { id },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });

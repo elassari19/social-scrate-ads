@@ -13,170 +13,6 @@ interface ActorParams {
   limit?: number;
   page?: number;
 }
-
-/**
- * Fetch actors from the backend
- */
-export async function getActors(params: ActorParams = {}) {
-  try {
-    // Build query parameters
-    const queryParams = new URLSearchParams();
-    if (params.category) queryParams.set('category', params.category);
-    if (params.search) queryParams.set('q', params.search);
-    if (params.limit) queryParams.set('limit', params.limit.toString());
-    if (params.page) queryParams.set('page', params.page.toString());
-
-    const queryString = queryParams.toString();
-    const url = `${API_URL}/actors${queryString ? `?${queryString}` : ''}`;
-
-    // Log parameters in development only
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`Fetching actors with params: ${JSON.stringify(params)}`);
-    }
-
-    // Get authentication headers
-    const authHeaders = await getAuthHeaders();
-
-    const response = await axios.get(url, {
-      withCredentials: true,
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders,
-      },
-    });
-
-    if (response.status !== 200) {
-      throw new Error('Failed to fetch actors');
-    }
-
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error) {
-    console.error('Error fetching actors:', error);
-    return {
-      success: false,
-      error: 'Failed to fetch actors',
-      // Return mock data as fallback
-      data: await import('../../utils/constants').then(
-        (module) => module.mockActors
-      ),
-    };
-  }
-}
-
-/**
- * Get actor by namespace
- */
-export async function getActorByNamespace(namespace: string) {
-  try {
-    // Get authentication headers
-    const authHeaders = await getAuthHeaders();
-
-    const response = await axios.get(
-      `${API_URL}/actors/namespace/${namespace}`,
-      {
-        withCredentials: true,
-        headers: authHeaders,
-      }
-    );
-
-    if (response.status !== 200) {
-      throw new Error('Failed to fetch actor');
-    }
-
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error) {
-    console.error(`Error fetching actor with namespace ${namespace}:`, error);
-    return {
-      success: false,
-      error: 'Failed to fetch actor',
-    };
-  }
-}
-
-/**
- * Execute an actor with DeepSeek AI
- */
-export async function executeActorWithDeepSeek(
-  namespace: string,
-  platformUrl: string,
-  prompt: string,
-  additionalContext?: Record<string, any>
-) {
-  try {
-    // Get authentication headers
-    const authHeaders = await getAuthHeaders();
-
-    console.log(
-      `Executing actor with namespace ${namespace} using DeepSeek and prompt: ${prompt}`
-    );
-
-    console.log('Sending payload to DeepSeek API:');
-
-    const response = await axios.post(
-      `${API_URL}/actors/namespace/${namespace}/deepseek`,
-      {
-        platformUrl: platformUrl,
-        prompt: prompt,
-        additionalContext: {
-          ...additionalContext,
-        },
-      },
-      {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-      }
-    );
-
-    if (response.status !== 200) {
-      throw new Error(
-        `Failed to execute actor with DeepSeek: ${response.statusText}`
-      );
-    }
-
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error: any) {
-    console.error(
-      `Error executing actor with namespace ${namespace} using DeepSeek:`,
-      error
-    );
-
-    // Add more detailed error information
-    let errorMessage = 'Failed to execute actor with DeepSeek';
-
-    if (error.response) {
-      console.error('Response data:', error.response.data);
-      console.error('Response status:', error.response.status);
-      errorMessage =
-        error.response.data?.message ||
-        error.response.data?.error ||
-        `Error ${error.response.status}: ${error.response.statusText}`;
-    } else if (error.request) {
-      console.error('No response received from server');
-      errorMessage = 'No response received from server';
-    } else {
-      console.error('Error message:', error.message);
-      errorMessage = error.message;
-    }
-
-    return {
-      success: false,
-      error: errorMessage,
-    };
-  }
-}
-
 /**
  * Execute an actor
  */
@@ -650,6 +486,269 @@ export async function deleteActor(id: string) {
     return {
       success: false,
       error: error.response?.data?.message || 'Failed to delete actor',
+    };
+  }
+}
+
+/**
+ * Fetch actors from the backend
+ */
+export async function getActors(params: ActorParams = {}) {
+  try {
+    // Build query parameters
+    const queryParams = new URLSearchParams();
+    if (params.category) queryParams.set('category', params.category);
+    if (params.search) queryParams.set('q', params.search);
+    if (params.limit) queryParams.set('limit', params.limit.toString());
+    if (params.page) queryParams.set('page', params.page.toString());
+
+    const queryString = queryParams.toString();
+    const url = `${API_URL}/actors${queryString ? `?${queryString}` : ''}`;
+
+    // Log parameters in development only
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Fetching actors with params: ${JSON.stringify(params)}`);
+    }
+
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.get(url, {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,
+      },
+    });
+
+    if (response.status !== 200) {
+      throw new Error('Failed to fetch actors');
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error('Error fetching actors:', error);
+    return {
+      success: false,
+      error: 'Failed to fetch actors',
+      // Return mock data as fallback
+      data: await import('../../utils/constants').then(
+        (module) => module.mockActors
+      ),
+    };
+  }
+}
+
+/**
+ * Get actor by namespace
+ */
+export async function getActorByNamespace(namespace: string) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.get(
+      `${API_URL}/actors/namespace/${namespace}`,
+      {
+        withCredentials: true,
+        headers: authHeaders,
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error('Failed to fetch actor');
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error(`Error fetching actor with namespace ${namespace}:`, error);
+    return {
+      success: false,
+      error: 'Failed to fetch actor',
+    };
+  }
+}
+
+/**
+ * Execute an actor with DeepSeek AI
+ */
+export async function generateActorUrl(
+  namespace: string,
+  platformUrl: string,
+  prompt: string,
+  additionalContext?: Record<string, any>
+) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    console.log('Sending payload to DeepSeek API:');
+
+    const response = await axios.post(
+      `${API_URL}/actors/namespace/${namespace}/deepseek`,
+      {
+        platformUrl: platformUrl,
+        prompt: prompt,
+        additionalContext: {
+          ...additionalContext,
+        },
+      },
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+      }
+    );
+
+    if (response.status !== 201) {
+      return {
+        success: false,
+        error: response.data?.message || 'Failed to execute actor',
+      };
+    }
+
+    revalidatePath(`/store/actors/${namespace}`);
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error: any) {
+    console.error(
+      `Error executing actor with namespace ${namespace} using DeepSeek:`,
+      error
+    );
+
+    // Add more detailed error information
+    let errorMessage = 'Failed to execute actor with DeepSeek';
+
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      errorMessage =
+        error.response.data?.message ||
+        error.response.data?.error ||
+        `Error ${error.response.status}: ${error.response.statusText}`;
+    } else if (error.request) {
+      console.error('No response received from server');
+      errorMessage = 'No response received from server';
+    } else {
+      console.error('Error message:', error.message);
+      errorMessage = error.message;
+    }
+
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+export async function getActorPrompts(namespace: string) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.get(
+      `${API_URL}/actors/namespace/${namespace}/prompts`,
+      {
+        withCredentials: true,
+        headers: authHeaders,
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error('Failed to fetch actor prompts');
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error(`Error fetching prompts for actor ${namespace}:`, error);
+    return {
+      success: false,
+      error: 'Failed to fetch actor prompts',
+    };
+  }
+}
+
+/**
+ * Update an existing prompt
+ */
+export async function updatePrompt(
+  promptId: string,
+  data: { prompt?: string }
+) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.put(
+      `${API_URL}/actors/prompts/${promptId}`,
+      data,
+      {
+        withCredentials: true,
+        headers: authHeaders,
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error('Failed to update prompt');
+    }
+
+    revalidatePath(`/store/actors/${data}`);
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error(`Error updating prompt with ID ${promptId}:`, error);
+    return {
+      success: false,
+      error: 'Failed to update prompt',
+    };
+  }
+}
+
+/**
+ * Delete a prompt
+ */
+export async function deletePrompt(promptId: string) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.delete(
+      `${API_URL}/actors/prompts/${promptId}`,
+      {
+        withCredentials: true,
+        headers: authHeaders,
+      }
+    );
+
+    if (response.status !== 204) {
+      throw new Error('Failed to delete prompt');
+    }
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error(`Error deleting prompt with ID ${promptId}:`, error);
+    return {
+      success: false,
+      error: 'Failed to delete prompt',
     };
   }
 }

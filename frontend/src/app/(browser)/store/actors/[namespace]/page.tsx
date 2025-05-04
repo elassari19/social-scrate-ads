@@ -1,9 +1,14 @@
 import React from 'react';
-import { getActorByNamespace, getActorRatings } from '@/app/api/actor';
+import {
+  getActorByNamespace,
+  getActorPrompts,
+  getActorRatings,
+} from '@/app/api/actor';
 import { Code, CreditCard, Edit, Globe, Star, Tag, User } from 'lucide-react';
 import Link from 'next/link';
 import ActorExecutor from '@/components/ui/actor-executor';
 import { Card } from '@/components/ui/card';
+import PromptsList from '@/components/sections/prompts-list';
 
 interface IProps {
   params: Promise<{
@@ -15,6 +20,7 @@ async function page({ params }: IProps) {
   const { namespace } = await params;
   // Fetch actor data using the namespace
   const { data: actorResponse, success } = await getActorByNamespace(namespace);
+  const { data: prompts } = await getActorPrompts(namespace);
 
   // Fetch actor ratings
   const { data: ratingsResponse } = actorResponse
@@ -205,6 +211,17 @@ async function page({ params }: IProps) {
             platformUrl={actorResponse.url}
           />
         </div>
+
+        {/* Prompts */}
+        {prompts && prompts.length > 0 && (
+          <div className="p-6">
+            <h2 className="text-lg font-semibold mb-4">Prompts History</h2>
+            <PromptsList
+              namespace={actorResponse.namespace}
+              initialPrompts={prompts}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

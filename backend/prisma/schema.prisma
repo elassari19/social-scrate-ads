@@ -23,6 +23,7 @@ model User {
   metrics       UserMetrics?
   actors        Actor[]        // Created actors
   actorRatings  ActorRating[]  // Ratings given to actors
+  userContents  ActorPrompt[] // User-generated content
 }
 
 // New Actor model based on actor-card.tsx properties
@@ -43,6 +44,25 @@ model Actor {
   user             User           @relation(fields: [userId], references: [id])
   executions       ActorExecution[]
   ratings          ActorRating[]  // Ratings received from users
+}
+
+// New model for user history of prompts
+model ActorPrompt {
+  id              String   @id @default(uuid())
+  namespace       String   // Unique namespace for the prompt
+  prompt          String
+  responseUrl     String?
+  responseScript  String?
+  isPublic        Boolean  @default(false) // Whether this content is shared publicly
+  usageCount      Int      @default(0)     // Track how many times it was used
+  lastUsed        DateTime?
+  isFavorite      Boolean  @default(false) // User can mark as favorite
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
 }
 
 // New model for user ratings on actors
