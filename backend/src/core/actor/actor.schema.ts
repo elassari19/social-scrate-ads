@@ -8,6 +8,11 @@ export const createActorSchema = z.object({
   icon: z.string(),
   url: z.string().url('Must be a valid URL').optional(),
   price: z.number().int().min(0).default(5), // Add price field with validation
+  responseFilter: z.object({
+    path: z.string().min(3, 'Path is required'),
+    properties: z.array(z.string()).optional(),
+    defaultResult: z.number().int().min(10).default(10),
+  }),
   page: z
     .any()
     .optional()
@@ -30,6 +35,11 @@ export const updateActorSchema = z.object({
   icon: z.string().url().optional(),
   url: z.string().url('Must be a valid URL').optional(),
   price: z.number().min(0).optional(), // Add optional price field
+  responseFilter: z.object({
+    path: z.string().min(3, 'Path is required'),
+    properties: z.array(z.string()).optional(),
+    defaultResult: z.number().int().min(10).default(10),
+  }),
   page: z
     .any()
     .optional()

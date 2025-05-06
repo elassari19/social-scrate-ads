@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Trash } from 'lucide-react';
+import { Trash, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -25,6 +25,14 @@ const actorSchema = z.object({
   price: z.number().int().min(1, 'Price must be at least 1'),
   tags: z.array(z.string()).optional(),
   description: z.string().min(10, 'Description must be at least 10 characters'),
+  responseFilters: z.object({
+    path: z.string(),
+    properties: z.array(z.string()),
+    defaultResult: z
+      .number()
+      .int()
+      .min(10, 'Default result must be at least 10'),
+  }),
   pageContent: z.string().optional(),
 });
 
@@ -44,6 +52,10 @@ export function ActorFormClient({
   const [selectedTags, setSelectedTags] = useState<string[]>(
     Array.isArray(initialData?.tags) ? initialData.tags : []
   );
+  const [propertyInput, setPropertyInput] = useState('');
+  const [properties, setProperties] = useState<string[]>(
+    initialData?.responseFilters?.properties || []
+  );
 
   const defaultValues: Partial<ActorFormValues> = {
     title: '',
@@ -53,6 +65,11 @@ export function ActorFormClient({
     url: '',
     price: 5,
     tags: [],
+    responseFilters: {
+      path: '',
+      properties: [],
+      defaultResult: 10,
+    },
     pageContent: `// Example page DOM to scrape a website
       <main><div><h1>Example Title</h1><p>Example description</p></d></main> `,
     ...initialData,
@@ -63,15 +80,42 @@ export function ActorFormClient({
     defaultValues,
   });
 
+  const handleAddProperty = () => {
+    if (propertyInput.trim() !== '') {
+      setProperties((prev) => [...prev, propertyInput.trim()]);
+      setPropertyInput('');
+    }
+  };
+
+  const handleRemoveProperty = (index: number) => {
+    setProperties((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddProperty();
+    }
+  };
+
   const handleSubmit = async (data: ActorFormValues) => {
     setIsSubmitting(true);
     try {
+      // Include properties in the form data
+      const updatedData = {
+        ...data,
+        responseFilters: {
+          ...data.responseFilters,
+          properties: properties,
+        },
+      };
+
       // Prepare the data with selected tags
       const actorData = {
-        ...data,
+        ...updatedData,
         tags: selectedTags,
         // Convert pageContent to page as expected by the backend
-        page: data.pageContent,
+        page: updatedData.pageContent,
         // Remove the pageContent field as it's not expected by the backend
         pageContent: undefined,
       };
@@ -210,8 +254,8 @@ export function ActorFormClient({
                 </p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="icon">Icon (emoji)</Label>
+            <div className="space-y-2 mt-2">
+              <Label htmlFor="icon">Icon</Label>
               <Input
                 id="icon"
                 placeholder="Icon URL"
@@ -223,6 +267,79 @@ export function ActorFormClient({
                 </p>
               )}
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="responseFilters.path">Target Path</Label>
+              <Input
+                id="responseFilters.path"
+                placeholder="e.g., data.items"
+                {...form.register('responseFilters.path')}
+              />
+              {form.formState.errors.responseFilters?.path && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.responseFilters.path.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="responseFilters.defaultResult">Min Results</Label>
+              <Input
+                id="responseFilters.defaultResult"
+                type="number"
+                min={10}
+                defaultValue={10}
+                {...form.register('responseFilters.defaultResult', {
+                  valueAsNumber: true,
+                })}
+              />
+              {form.formState.errors.responseFilters?.defaultResult && (
+                <p className="text-sm text-red-500">
+                  {form.formState.errors.responseFilters.defaultResult.message}
+                </p>
+              )}
+              <p className="text-xs text-gray-500">
+                Minimum number of results to return (min: 10)
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="responseFilters.properties">Properties</Label>
+            <div className="flex items-center space-x-2">
+              <Input
+                id="responseFilters.properties"
+                placeholder="Add a property"
+                value={propertyInput}
+                onChange={(e) => setPropertyInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+              <Button type="button" onClick={handleAddProperty}>
+                Add
+              </Button>
+            </div>
+            {properties.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {properties.map((property, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center space-x-2 bg-gray-100 px-2 py-1 rounded-md"
+                  >
+                    <span className="text-sm font-semibold">{property}</span>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleRemoveProperty(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

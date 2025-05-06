@@ -752,3 +752,47 @@ export async function deletePrompt(promptId: string) {
     };
   }
 }
+
+/**
+ * Scrape data from a response URL based on the original prompt
+ */
+export async function scrapeData(
+  id: string,
+  responseUrl: string,
+  prompt: string,
+  namespace: string
+) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.post(
+      `${API_URL}/puppeteer/generate-script`,
+      {
+        id,
+        url: responseUrl,
+        prompt,
+        actorNamespace: namespace,
+      },
+      {
+        withCredentials: true,
+        headers: authHeaders,
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error('Failed to scrape data');
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error('Error scraping data:', error);
+    return {
+      success: false,
+      error: 'Failed to scrape data from URL',
+    };
+  }
+}

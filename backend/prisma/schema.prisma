@@ -37,6 +37,7 @@ model Actor {
   url              String?        // Optional URL for the Actor
   price            Int            @default(1000) // Add price field with default 1000
   tags             String[]
+  responseFilters  Json? 
   page             Json?          // Puppeteer script for scraping
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
@@ -52,7 +53,7 @@ model ActorPrompt {
   namespace       String   // Unique namespace for the prompt
   prompt          String
   responseUrl     String?
-  responseScript  String?
+  response        String?
   isPublic        Boolean  @default(false) // Whether this content is shared publicly
   usageCount      Int      @default(0)     // Track how many times it was used
   lastUsed        DateTime?

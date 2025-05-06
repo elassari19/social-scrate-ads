@@ -35,7 +35,6 @@ export function createActorRoutes(actorController: ActorController): Router {
   router.post(
     '/',
     clearCache('actors*'),
-    clearCache('actors*'),
     validate(createActorSchema),
     actorController.createActor
   );

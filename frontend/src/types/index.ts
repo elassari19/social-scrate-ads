@@ -14,4 +14,9 @@ export interface Actor {
   url: string;
   price: number;
   tags: string[];
+  responseFilters: {
+    path: string;
+    properties: string[];
+    defaultResult: number;
+  };
 }
