@@ -17,21 +17,19 @@ import { toast } from 'sonner';
 import { generateActorUrl } from '@/app/api/actor';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Actor } from '../../types';
 
 interface ActorExecutorProps {
-  platformUrl: string;
-  actorTitle: string;
-  namespace: string;
+  actor: Actor;
 }
 
-export default function ActorExecutor({
-  platformUrl,
-  actorTitle,
-  namespace,
-}: ActorExecutorProps) {
+export default function ActorExecutor({ actor }: ActorExecutorProps) {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
-  const [platform, setPlatform] = useState(platformUrl);
+  const [platform, setPlatform] = useState(actor.url);
+  const [defaultResult, setDefaultResult] = useState(
+    actor.responseFilters?.defaultResult || 10
+  );
   const [loading, setLoading] = useState(false);
 
   // Handle actor execution using the generateActorUrl function
@@ -41,11 +39,12 @@ export default function ActorExecutor({
 
       // Use the generateActorUrl function which is specifically designed for this API
       const { success, data, error } = await generateActorUrl(
-        namespace,
+        actor.namespace,
         platform.trim(),
         prompt.trim(),
         {
           actorType: 'generic',
+          maxResult: defaultResult,
         }
       );
 
@@ -55,7 +54,7 @@ export default function ActorExecutor({
       }
 
       toast.success(
-        `Generated URL queries for Actor "${actorTitle}" successfully!`
+        `Generated URL queries for Actor "${actor.title}" successfully!`
       );
 
       // Close the dialog after successful submission
@@ -77,7 +76,7 @@ export default function ActorExecutor({
         onClick={() => setOpen(true)}
         className="cursor-pointer bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
       >
-        Execute this Actor
+        Generate URL
       </button>
 
       {/* Execute Actor Dialog */}
@@ -89,7 +88,7 @@ export default function ActorExecutor({
       >
         <DialogContent className="w-full md:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Execute {actorTitle}</DialogTitle>
+            <DialogTitle>Generate {actor.title} URL queries</DialogTitle>
             <DialogDescription>
               Enter a prompt to generate new URL queries for the actor.
             </DialogDescription>
@@ -97,7 +96,7 @@ export default function ActorExecutor({
 
           <div className="mt-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="platform">Platform</Label>
+              <Label htmlFor="platform">Platform URL</Label>
               <Input
                 id="platform"
                 placeholder="Enter target platform (e.g., facebook, twitter, linkedin)"
@@ -105,6 +104,22 @@ export default function ActorExecutor({
                 onChange={(e) => setPlatform(e.target.value)}
                 disabled={loading}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="defaultResult">Scrape Result</Label>
+              <Input
+                id="defaultResult"
+                type="number"
+                min={10}
+                placeholder="Minimum number of results to return"
+                value={defaultResult}
+                onChange={(e) => setDefaultResult(Number(e.target.value))}
+                disabled={loading}
+              />
+              <p className="text-xs text-gray-500">
+                How many results should be returned (minimum: 10)
+              </p>
             </div>
 
             <div className="space-y-2">

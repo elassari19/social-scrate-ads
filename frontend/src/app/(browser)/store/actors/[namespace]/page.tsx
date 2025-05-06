@@ -70,6 +70,9 @@ async function page({ params }: IProps) {
                 <span className="text-sm font-medium text-green-600">
                   {actorResponse?.price || 5}$ per each 1000 results
                 </span>
+                <span className="pl-2 text-xs font-semibold text-gray-600">
+                  min/{actorResponse.responseFilters.defaultResult} result
+                </span>
               </div>
 
               {actorResponse.averageRating && (
@@ -205,11 +208,7 @@ async function page({ params }: IProps) {
 
         {/* Execute Actor Button Section */}
         <div className="p-6 bg-gray-50 dark:bg-gray-900">
-          <ActorExecutor
-            namespace={actorResponse.namespace}
-            actorTitle={actorResponse.title}
-            platformUrl={actorResponse.url}
-          />
+          <ActorExecutor actor={actorResponse} />
         </div>
 
         {/* Prompts */}
