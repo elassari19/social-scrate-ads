@@ -87,11 +87,131 @@ export class ActorController {
         return;
       }
 
+      // Create the actor with basic configuration
       const actor = await this.actorService.createActor(req.body, userId);
       res.status(201).json(actor);
     } catch (error) {
       console.error('Error creating actor:', error);
       res.status(500).json({ error: 'Failed to create actor' });
+    }
+  };
+
+  // New method for AI-assisted actor configuration
+  configureActorWithAI = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { url, prompt, skipScraping } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      // If skipScraping is true, only generate the URL without scraping
+      if (skipScraping) {
+        try {
+          // Only generate and return a URL based on the domain and prompt
+          const urlPrompt = `Generate a specific URL for ${url} based on this prompt: "${prompt}".
+            The URL should include appropriate query parameters, filters, or path segments.
+            Return only the full URL with no additional text.`;
+
+          const generatedUrl = await this.deepSeekService.generateUrl(
+            url,
+            urlPrompt,
+            { actorTitle: prompt }
+          );
+
+          // Return just the generated URL analysis
+          return res.json({
+            analysis: {
+              url: generatedUrl,
+            },
+          });
+        } catch (urlError) {
+          console.warn('Error generating URL:', urlError);
+          res.status(500).json({
+            error: 'Failed to generate URL',
+            message:
+              urlError instanceof Error ? urlError.message : String(urlError),
+          });
+          return;
+        }
+      }
+
+      // Otherwise, do the full scraping and configuration
+      const configuration = await this.actorService.configureActorWithAI(
+        id,
+        url,
+        prompt,
+        userId
+      );
+
+      res.json(configuration);
+    } catch (error) {
+      console.error('Error configuring actor with AI:', error);
+      res.status(500).json({
+        error: 'Failed to configure actor with AI',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
+  // New method to test actor scraping
+  testActorScraping = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { url } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const results = await this.actorService.testActorScraping(
+        id,
+        url,
+        userId
+      );
+      res.json(results);
+    } catch (error) {
+      console.error('Error testing actor scraping:', error);
+      res.status(500).json({
+        error: 'Failed to test actor scraping',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
+  // New method to filter response properties
+  configureResponseFilters = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { properties, path, defaultResult } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const updatedActor = await this.actorService.configureResponseFilters(
+        id,
+        { properties, path, defaultResult },
+        userId
+      );
+
+      res.json(updatedActor);
+    } catch (error) {
+      console.error('Error configuring response filters:', error);
+      res.status(500).json({
+        error: 'Failed to configure response filters',
+        message: error instanceof Error ? error.message : String(error),
+      });
     }
   };
 

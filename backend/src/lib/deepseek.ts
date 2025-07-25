@@ -122,17 +122,6 @@ export class DeepSeekService {
   }
 
   /**
-   * Generate content with specialized prompt
-   */
-  async generateContent<T>(
-    prompt: string,
-    context: Record<string, any> = {},
-    options?: Partial<DeepSeekOptions>
-  ): Promise<T> {
-    return this.callDeepSeekAPI(prompt, context, options) as Promise<T>;
-  }
-
-  /**
    * Generate URL based on namespace and prompt
    */
   async generateUrl(
@@ -162,6 +151,74 @@ export class DeepSeekService {
     }
 
     throw new Error('Failed to generate a valid URL');
+  }
+
+  /**
+   * Parse content from a URL based on a prompt
+   */
+  async parseContent(
+    url: string,
+    prompt: string,
+    additionalContext: Record<string, any> = {}
+  ): Promise<any> {
+    const result = await this.callDeepSeekAPI(
+      prompt,
+      {
+        url,
+        ...additionalContext,
+      },
+      {
+        system_prompt:
+          'You are an expert web scraper. Parse the content from the provided URL based on the user prompt.',
+        temperature: 0.2,
+      }
+    );
+
+    if (typeof result === 'object') {
+      return result;
+    }
+
+    throw new Error('Failed to parse content');
+  }
+
+  /**
+   * Analyze API response data to extract structure and important fields
+   */
+  async analyzeContent(
+    url: string,
+    prompt: string,
+    additionalContext: Record<string, any> = {}
+  ): Promise<any> {
+    const result = await this.callDeepSeekAPI(
+      prompt,
+      {
+        url,
+        ...additionalContext,
+      },
+      {
+        system_prompt:
+          'You are an API analysis expert. Analyze the structure of API responses and identify important data fields and patterns.',
+        temperature: 0.2,
+      }
+    );
+
+    if (typeof result === 'object') {
+      return result;
+    } else if (typeof result === 'string') {
+      try {
+        // Try to parse the result as JSON if it's a string
+        return JSON.parse(result);
+      } catch (e) {
+        // If not valid JSON, return as is
+        return {
+          text: result,
+          path: '',
+          properties: [],
+        };
+      }
+    }
+
+    throw new Error('Failed to analyze content structure');
   }
 
   /**
@@ -218,80 +275,6 @@ export class DeepSeekService {
     }
 
     return {
-      script: result.script,
-      selectors: result.selectors || {},
-      pagination: result.pagination || { maxPages: 1 },
-    };
-  }
-
-  /**
-   * Generate both URL and Puppeteer script in one call
-   */
-  async generateUrlAndScript(
-    namespace: string,
-    prompt: string,
-    additionalContext: Record<string, any> = {}
-  ): Promise<{
-    url: string;
-    script: string;
-    selectors: Record<string, string>;
-    pagination?: { nextPageSelector?: string; maxPages: number };
-  }> {
-    const combinedPrompt = `
-      You are a web scraping expert for ${namespace}. A user needs to extract specific data based on their prompt.
-      
-      User prompt: "${prompt}"
-      
-      Based on this prompt and the platform "${namespace}" (e.g., LinkedIn, Facebook, Twitter, Instagram, etc.):
-      
-      1. Generate a valid, working URL for ${namespace} that would contain this data
-      2. Create a Puppeteer script that will execute on that URL to extract exactly what the user requested
-      3. Define all necessary CSS selectors to extract the relevant data
-      4. Include pagination handling if the data might span multiple pages
-      
-      The script should:
-      - Only contain the data extraction logic (browser setup is handled elsewhere)
-      - Follow the user's prompt instructions precisely
-      - Store all extracted data in a 'data' object
-      - Handle common errors that might occur during scraping
-      - Use modern Puppeteer best practices
-      
-      Return ONLY a JSON object with the following structure:
-      {
-        "url": "full URL to navigate to",
-        "selectors": {
-          "key1": "selector1",
-          "key2": "selector2"
-        },
-        "pagination": {
-          "nextPageSelector": "selector for next page button if applicable",
-          "maxPages": number of pages to scrape (default: 1)
-        },
-        "script": "// Puppeteer script\\nconst data = {};\\n// Extraction logic here\\n// Make sure all requested data is stored in the data object"
-      }
-    `;
-
-    const result = await this.callDeepSeekAPI(
-      combinedPrompt,
-      {
-        namespace,
-        prompt,
-        ...additionalContext,
-      },
-      {
-        system_prompt:
-          'You are an expert in web scraping with Puppeteer. Generate precise URLs and reliable scraping scripts.',
-        temperature: 0.2,
-        max_tokens: 8000,
-      }
-    );
-
-    if (!result.url || !result.script) {
-      throw new Error('Failed to generate a valid URL and Puppeteer script');
-    }
-
-    return {
-      url: result.url,
       script: result.script,
       selectors: result.selectors || {},
       pagination: result.pagination || { maxPages: 1 },

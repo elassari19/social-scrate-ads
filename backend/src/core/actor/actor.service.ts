@@ -567,4 +567,286 @@ export class ActorService {
     await prisma.actorRating.delete({ where: { id } });
     return true;
   }
+
+  // New method to configure Actor with AI assistance
+  async configureActorWithAI(
+    actorId: string,
+    url: string,
+    prompt: string,
+    userId: string
+  ): Promise<any> {
+    // First verify the actor belongs to the user
+    const actor = await prisma.actor.findFirst({
+      where: { id: actorId, userId },
+    });
+
+    if (!actor) {
+      throw new Error(
+        'Actor not found or you do not have permission to update it'
+      );
+    }
+
+    try {
+      // Generate specific URL based on domain and prompt if needed
+      let targetUrl = url;
+
+      // Check if we need to generate a URL (if prompt contains URL generation intent)
+      if (prompt && prompt.length > 20) {
+        try {
+          // First try to generate a more specific URL based on the domain and prompt
+          const urlPrompt = `Generate a specific URL for ${url} based on this prompt: "${prompt}".
+            The URL should include appropriate query parameters, filters, or path segments.
+            Return only the full URL with no additional text.`;
+
+          const generatedUrl = await this.deepSeekService.generateUrl(
+            url,
+            urlPrompt,
+            { actorTitle: actor.title }
+          );
+
+          // If we got a valid URL, use it instead of the original domain
+          if (generatedUrl && generatedUrl.startsWith('http')) {
+            targetUrl = generatedUrl;
+            console.log(`Generated URL for scraping: ${targetUrl}`);
+
+            // Update the actor with the generated URL
+            await prisma.actor.update({
+              where: { id: actorId },
+              data: {
+                url: targetUrl,
+              },
+            });
+          }
+        } catch (urlError) {
+          console.warn('Error generating specific URL:', urlError);
+          // Continue with original URL if generation fails
+        }
+      }
+
+      // Use PuppeteerService to visit the URL and analyze content
+      // Extract key data structures and suggest response filters
+      const puppeteerService = new PuppeteerService(redisClient);
+
+      // Get page content using the generated or original URL
+      const pageContent = await puppeteerService.getPageContent(targetUrl, {});
+      const contentObj = JSON.parse(pageContent);
+
+      // Prepare the prompt for DeepSeek
+      const analysisPrompt = `
+        Analyze this API response data and help configure an Actor that will scrape similar data:
+        
+        ${pageContent.substring(0, 8000)}... [truncated for brevity]
+        
+        Based on the data above and the user prompt: "${prompt}", please:
+        
+        1. Identify the main data structure and important fields
+        2. Suggest the path where the main data array/object is located
+        3. List key properties that should be extracted
+        4. Recommend filters to deduplicate and clean the data
+        5. Provide a script outline for scraping similar data
+        
+        Format your response as a JSON object with these properties:
+        - path: The path to the main data (e.g., "data.results")
+        - properties: An array of important property names to keep
+        - description: A description of what this data represents
+        - scriptOutline: A basic script outline for scraping
+      `;
+
+      // Generate an analysis with DeepSeek
+      const analysis = await this.deepSeekService.analyzeContent(
+        url,
+        analysisPrompt,
+        { actorTitle: actor.title }
+      );
+
+      // Extract key information from the analysis
+      const parsedAnalysis =
+        typeof analysis === 'string' ? JSON.parse(analysis) : analysis;
+
+      // Generate response filters based on the analysis
+      const responseFilters = {
+        path: parsedAnalysis.path || '',
+        properties: parsedAnalysis.properties || [],
+        defaultResult: 20,
+      };
+
+      // Extract property options for UI display
+      let propertyOptions: string[] = [];
+
+      // Attempt to extract all properties from the first data item
+      if (contentObj && contentObj.length > 0) {
+        const firstResponse = contentObj[0];
+        if (
+          firstResponse.data &&
+          Array.isArray(firstResponse.data) &&
+          firstResponse.data.length > 0
+        ) {
+          propertyOptions = Object.keys(firstResponse.data[0] || {});
+        } else if (
+          firstResponse.data &&
+          typeof firstResponse.data === 'object'
+        ) {
+          // Try to find arrays in the data object
+          for (const [key, value] of Object.entries(firstResponse.data)) {
+            if (Array.isArray(value) && value.length > 0) {
+              propertyOptions = Object.keys(value[0] || {});
+              break;
+            }
+          }
+        }
+      }
+
+      // Update the actor with the AI-generated configuration
+      await prisma.actor.update({
+        where: { id: actorId },
+        data: {
+          responseFilters: responseFilters,
+          page: {
+            script: parsedAnalysis.scriptOutline || '',
+            url: url,
+          },
+        },
+      });
+
+      // Return the analysis and property options for the frontend
+      return {
+        analysis: parsedAnalysis,
+        responseFilters,
+        propertyOptions,
+        rawData: contentObj,
+      };
+    } catch (error) {
+      console.error('Error configuring actor with AI:', error);
+      throw new Error(
+        `Failed to configure actor with AI: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  // New method to test actor scraping
+  async testActorScraping(
+    actorId: string,
+    url: string,
+    userId: string
+  ): Promise<any> {
+    // First verify the actor belongs to the user
+    const actor = await prisma.actor.findFirst({
+      where: { id: actorId, userId },
+    });
+
+    if (!actor) {
+      throw new Error(
+        'Actor not found or you do not have permission to test it'
+      );
+    }
+
+    try {
+      // Initialize PuppeteerService
+      const puppeteerService = new PuppeteerService(redisClient);
+
+      // Get current response filters from the actor
+      const responseFilters = (actor.responseFilters as any) || {};
+
+      // Scrape the URL with current filters
+      const pageContent = await puppeteerService.getPageContent(
+        url,
+        responseFilters
+      );
+
+      // Parse the content to extract available properties for filtering
+      const contentObj = JSON.parse(pageContent);
+
+      // Extract property options for UI display
+      let propertyOptions: string[] = [];
+      let sampleData: any = null;
+
+      // Attempt to extract all properties from the first data item
+      if (contentObj && contentObj.length > 0) {
+        const firstResponse = contentObj[0];
+        if (
+          firstResponse.data &&
+          Array.isArray(firstResponse.data) &&
+          firstResponse.data.length > 0
+        ) {
+          propertyOptions = Object.keys(firstResponse.data[0] || {});
+          sampleData = firstResponse.data[0];
+        } else if (
+          firstResponse.data &&
+          typeof firstResponse.data === 'object'
+        ) {
+          // Try to find arrays in the data object
+          for (const [key, value] of Object.entries(firstResponse.data)) {
+            if (Array.isArray(value) && value.length > 0) {
+              propertyOptions = Object.keys(value[0] || {});
+              sampleData = value[0];
+              break;
+            }
+          }
+        }
+      }
+
+      // Return the test results
+      return {
+        data: contentObj,
+        propertyOptions,
+        sampleData,
+        currentFilters: responseFilters,
+      };
+    } catch (error) {
+      console.error('Error testing actor scraping:', error);
+      throw new Error(
+        `Failed to test actor scraping: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
+
+  // New method to configure response filters
+  async configureResponseFilters(
+    actorId: string,
+    filters: { properties?: string[]; path?: string; defaultResult?: number },
+    userId: string
+  ): Promise<Actor> {
+    // First verify the actor belongs to the user
+    const actor = await prisma.actor.findFirst({
+      where: { id: actorId, userId },
+    });
+
+    if (!actor) {
+      throw new Error(
+        'Actor not found or you do not have permission to update it'
+      );
+    }
+
+    try {
+      // Get current response filters from the actor
+      const currentFilters = (actor.responseFilters as any) || {};
+
+      // Merge with new filters
+      const updatedFilters = {
+        path: filters.path || currentFilters.path || '',
+        properties: filters.properties || currentFilters.properties || [],
+        defaultResult:
+          filters.defaultResult || currentFilters.defaultResult || 20,
+      };
+
+      // Update the actor with new filters
+      return prisma.actor.update({
+        where: { id: actorId },
+        data: {
+          responseFilters: updatedFilters,
+        },
+      });
+    } catch (error) {
+      console.error('Error configuring response filters:', error);
+      throw new Error(
+        `Failed to configure response filters: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
+  }
 }

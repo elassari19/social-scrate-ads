@@ -192,4 +192,39 @@ export const puppeteerApi = {
       throw error;
     }
   },
+
+  /**
+   * Select a specific response from puppeteer navigation to save in actor configuration
+   */
+  async selectResponse(params: {
+    actorId: string;
+    responseId: string;
+    properties?: string[];
+    dataPath?: string;
+    defaultResult?: number;
+  }): Promise<any> {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/puppeteer/select-response`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify(params),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to select response');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Response selection error:', error);
+      throw error;
+    }
+  },
 };

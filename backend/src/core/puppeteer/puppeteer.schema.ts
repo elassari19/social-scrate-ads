@@ -29,8 +29,18 @@ export const analyzeRatingsSchema = z.object({
   additionalContext: z.record(z.any()).optional(),
 });
 
+// New schema for selecting a specific response
+export const selectResponseSchema = z.object({
+  actorId: z.string().uuid('Invalid actor ID'),
+  responseId: z.string().min(1, 'Response ID is required'),
+  properties: z.array(z.string()).optional(),
+  dataPath: z.string().optional(),
+  defaultResult: z.number().int().min(1).max(1000).optional(),
+});
+
 export type WebContentDeepSeekRequest = z.infer<
   typeof webContentDeepSeekSchema
 >;
 export type UrlAndSelectorsResponse = z.infer<typeof urlAndSelectorsSchema>;
 export type AnalyzeRatingsRequest = z.infer<typeof analyzeRatingsSchema>;
+export type SelectResponseRequest = z.infer<typeof selectResponseSchema>;

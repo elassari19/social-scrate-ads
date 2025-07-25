@@ -8,6 +8,9 @@ import {
   executeActorSchema,
   deepSeekActorSchema,
   rateActorSchema,
+  configureActorWithAISchema,
+  testActorScrapingSchema,
+  configureResponseFiltersSchema,
 } from './actor.schema';
 import { isAuthenticated } from '../auth/auth.middleware';
 
@@ -37,6 +40,29 @@ export function createActorRoutes(actorController: ActorController): Router {
     clearCache('actors*'),
     validate(createActorSchema),
     actorController.createActor
+  );
+
+  // AI-assisted actor configuration
+  router.post(
+    '/:id/configure-with-ai',
+    clearCache('actors*'),
+    validate(configureActorWithAISchema),
+    actorController.configureActorWithAI
+  );
+
+  // Test actor scraping with current configuration
+  router.post(
+    '/:id/test-scraping',
+    validate(testActorScrapingSchema),
+    actorController.testActorScraping
+  );
+
+  // Configure response filters
+  router.post(
+    '/:id/response-filters',
+    clearCache('actors*'),
+    validate(configureResponseFiltersSchema),
+    actorController.configureResponseFilters
   );
 
   // Update actor

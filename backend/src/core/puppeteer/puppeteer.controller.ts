@@ -1,132 +1,59 @@
 import { Request, Response } from 'express';
 import { PuppeteerService } from './puppeteer.service';
-import { ActorService } from '../actor/actor.service';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export class PuppeteerController {
-  private actorService: ActorService;
-
   constructor(private puppeteerService: PuppeteerService) {
-    // Initialize ActorService with the same PuppeteerService instance
-    this.actorService = new ActorService(puppeteerService);
+    this.puppeteerService = puppeteerService;
   }
 
-  // Process web content with user-provided prompt using DeepSeek AI
-  processWebContentWithDeepSeek = async (
-    req: Request,
-    res: Response
-  ): Promise<void> => {
+  // Generate puppeteer script for a specific URL
+  gerUrlContent = async (req: Request, res: Response): Promise<void> => {
+    console.log('Generating puppeteer script...');
     try {
-      const {
-        url,
-        prompt,
-        customSelectors,
-        fullPageContent,
-        actorNamespace,
-        additionalContext,
-      } = req.body;
+      const { id, url, prompt, actorNamespace, additionalContext } = req.body;
       const userId = req.user?.id;
+
+      if (!url) {
+        res.status(400).json({ error: 'URL is required' });
+        return;
+      }
 
       if (!prompt) {
         res.status(400).json({ error: 'Prompt is required' });
         return;
       }
 
-      // Log the user's request
       console.log(
-        `User ${userId} requested web content analysis with DeepSeek AI`
+        `Getting URL content for url: ${url}, actor: ${actorNamespace}`
       );
 
-      // If actorNamespace is provided, use the actor-based flow
-      if (actorNamespace) {
-        try {
-          // Use the actor service to handle the request
-          const result = await this.actorService.executeActorWithDeepSeek(
-            actorNamespace,
-            {
-              userPrompt: prompt,
-              ...additionalContext,
-              userId,
-            }
-          );
-
-          res.json(result);
-          return;
-        } catch (error) {
-          console.error('Actor-based scraping error:', error);
-          res.status(500).json({
-            error: 'Failed to process web content with actor',
-            message: error instanceof Error ? error.message : String(error),
-          });
-          return;
-        }
-      }
-
-      // If URL is provided, use the direct web content processing
-      if (url) {
-        // Process web content with DeepSeek AI
-        const result =
-          await this.puppeteerService.processWebContentWithDeepSeek(
-            url,
-            prompt,
-            {
-              customSelectors,
-              fullPageContent,
-              additionalContext: {
-                ...additionalContext,
-                userId,
-              },
-            }
-          );
-
-        res.json({
-          url,
-          result,
-          timestamp: new Date().toISOString(),
-        });
-        return;
-      }
-
-      // If neither actorNamespace nor URL is provided, generate URL from DeepSeek
-      const { url: generatedUrl, selectors } =
-        await this.puppeteerService.generateUrlAndSelectors(
-          'generic', // Default actor type
-          prompt,
-          additionalContext
-        );
-
-      // Now use the generated URL to scrape and analyze
-      const result = await this.puppeteerService.processWebContentWithDeepSeek(
-        generatedUrl,
+      // Use DeepSeek to generate the puppeteer script
+      const scriptResult = await this.puppeteerService.parseContent(
+        id,
+        url,
         prompt,
-        {
-          customSelectors: selectors,
-          additionalContext: {
-            ...additionalContext,
-            userId,
-            generatedUrl: true,
-          },
-        }
+        actorNamespace,
+        additionalContext
       );
 
-      res.json({
-        url: generatedUrl,
-        result,
-        timestamp: new Date().toISOString(),
-      });
+      res.json(scriptResult);
     } catch (error) {
-      console.error('Web content processing error:', error);
+      console.error('Error generating puppeteer script:', error);
 
       res.status(500).json({
-        error: 'Failed to process web content with DeepSeek AI',
+        error: 'Failed to generate puppeteer script',
         message: error instanceof Error ? error.message : String(error),
       });
     }
   };
 
-  // New endpoint to analyze actor ratings using DeepSeek AI
-  analyzeActorRatings = async (req: Request, res: Response): Promise<void> => {
+  // Select a specific response from puppeteer navigation to save in actor configuration
+  selectResponse = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { actorId, prompt, additionalContext } = req.body;
+      const { actorId, responseId, properties } = req.body;
       const userId = req.user?.id;
 
       if (!actorId) {
@@ -134,36 +61,51 @@ export class PuppeteerController {
         return;
       }
 
-      // Use the enhanced prompt or a default one
-      const analysisPrompt =
-        prompt ||
-        "Analyze these ratings and provide insights about the actor's performance, common themes in feedback, and suggestions for improvement.";
+      if (!responseId) {
+        res.status(400).json({ error: 'Response ID is required' });
+        return;
+      }
 
-      // Log the request
-      console.log(
-        `User ${userId} requested actor ratings analysis for actor ${actorId}`
-      );
+      console.log(`Selecting response ${responseId} for actor ${actorId}`);
 
-      // Process the ratings with DeepSeek
-      const result = await this.puppeteerService.processRatingsWithDeepSeek(
-        actorId,
-        analysisPrompt,
-        {
-          ...additionalContext,
-          userId,
-        }
-      );
+      // Verify actor exists and belongs to the user
+      const actor = await prisma.actor.findFirst({
+        where: {
+          id: actorId,
+          userId: userId,
+        },
+      });
+
+      if (!actor) {
+        res.status(404).json({ error: 'Actor not found or access denied' });
+        return;
+      }
+
+      // Update the actor's responseFilters with the selected response ID
+      const updatedActor = await prisma.actor.update({
+        where: { id: actorId },
+        data: {
+          responseFilters: {
+            selectedResponseId: responseId,
+            properties: properties || [],
+            ...((actor.responseFilters as object) || {}),
+          },
+        },
+      });
 
       res.json({
-        actorId,
-        analysis: result,
-        timestamp: new Date().toISOString(),
+        success: true,
+        message: 'Response selection saved successfully',
+        actor: {
+          id: updatedActor.id,
+          title: updatedActor.title,
+          responseFilters: updatedActor.responseFilters,
+        },
       });
     } catch (error) {
-      console.error('Rating analysis error:', error);
-
+      console.error('Error selecting response:', error);
       res.status(500).json({
-        error: 'Failed to analyze actor ratings with DeepSeek AI',
+        error: 'Failed to save response selection',
         message: error instanceof Error ? error.message : String(error),
       });
     }

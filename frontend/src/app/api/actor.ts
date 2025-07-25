@@ -358,11 +358,12 @@ export async function createActor(actorData: any) {
     // Get authentication headers
     const authHeaders = await getAuthHeaders();
     const user = await getSession();
+    const { url, ...rest } = actorData;
 
     const response = await axios.post(
       `${API_URL}/actors`,
       {
-        ...actorData,
+        ...rest,
         authorName: user?.name.split(' ')[0],
       },
       {
@@ -793,6 +794,135 @@ export async function scrapeData(
     return {
       success: false,
       error: 'Failed to scrape data from URL',
+    };
+  }
+}
+
+/**
+ * Configure an actor with AI assistance
+ */
+export async function configureActorWithAI(
+  actorId: string,
+  data: { url: string; prompt: string; skipScraping?: boolean }
+) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.post(
+      `${API_URL}/actors/${actorId}/configure-with-ai`,
+      data,
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error('Failed to configure actor with AI');
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error: any) {
+    console.error(`Error configuring actor ${actorId} with AI:`, error);
+    return {
+      success: false,
+      error:
+        error.response?.data?.message || 'Failed to configure actor with AI',
+    };
+  }
+}
+
+/**
+ * Test actor scraping with current configuration
+ */
+export async function testActorScraping(
+  actorId: string,
+  data: { url: string }
+) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.post(
+      `${API_URL}/actors/${actorId}/test-scraping`,
+      data,
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error('Failed to test actor scraping');
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error: any) {
+    console.error(`Error testing actor ${actorId} scraping:`, error);
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Failed to test actor scraping',
+    };
+  }
+}
+
+/**
+ * Configure response filters for an actor
+ */
+export async function configureResponseFilters(
+  actorId: string,
+  filters: {
+    path?: string;
+    properties?: string[];
+    defaultResult?: number;
+  }
+) {
+  try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
+    const response = await axios.post(
+      `${API_URL}/actors/${actorId}/response-filters`,
+      filters,
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+          ...authHeaders,
+        },
+      }
+    );
+
+    if (response.status !== 200) {
+      throw new Error('Failed to configure response filters');
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error: any) {
+    console.error(
+      `Error configuring response filters for actor ${actorId}:`,
+      error
+    );
+    return {
+      success: false,
+      error:
+        error.response?.data?.message || 'Failed to configure response filters',
     };
   }
 }

@@ -5,14 +5,21 @@ export const createActorSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
   authorName: z.string().min(1, 'Author name is required'),
-  icon: z.string(),
+  icon: z.string().url('Must be a valid URL'),
   url: z.string().url('Must be a valid URL').optional(),
-  price: z.number().int().min(0).default(5), // Add price field with validation
-  responseFilters: z.object({
-    path: z.string().min(3, 'Path is required'),
-    properties: z.array(z.string()).optional(),
-    defaultResult: z.number().int().min(10).default(10),
-  }),
+  price: z.number().int().min(0).default(5), // Default price
+  responseFilters: z
+    .object({
+      path: z.string().optional(),
+      properties: z.array(z.string()).optional(),
+      defaultResult: z.number().int().min(1).max(1000).default(20),
+    })
+    .optional()
+    .default({
+      path: '',
+      properties: [],
+      defaultResult: 20,
+    }),
   page: z
     .any()
     .optional()
@@ -32,14 +39,16 @@ export const updateActorSchema = z.object({
   title: z.string().min(1, 'Title is required').optional(),
   description: z.string().min(1, 'Description is required').optional(),
   authorName: z.string().min(1, 'Author name is required').optional(),
-  icon: z.string().url().optional(),
+  icon: z.string().url('Must be a valid URL').optional(),
   url: z.string().url('Must be a valid URL').optional(),
-  price: z.number().min(0).optional(), // Add optional price field
-  responseFilters: z.object({
-    path: z.string().min(3, 'Path is required'),
-    properties: z.array(z.string()).optional(),
-    defaultResult: z.number().int().min(10).default(10),
-  }),
+  price: z.number().int().min(0).optional(), // Optional price field
+  responseFilters: z
+    .object({
+      path: z.string().optional(),
+      properties: z.array(z.string()).optional(),
+      defaultResult: z.number().int().min(1).max(1000).optional(),
+    })
+    .optional(),
   page: z
     .any()
     .optional()
@@ -83,9 +92,44 @@ export const deepSeekActorSchema = z.object({
   additionalContext: z.record(z.any()).optional().default({}),
 });
 
+// Schema for AI-assisted actor configuration
+export const configureActorWithAISchema = z.object({
+  url: z.string().url('Must be a valid URL'),
+  prompt: z.string().min(5, 'Prompt is required'),
+});
+
+// Schema for testing actor scraping
+export const testActorScrapingSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid actor ID'),
+  }),
+  body: z.object({
+    url: z.string().url('Must be a valid URL'),
+  }),
+});
+
+// Schema for configuring response filters
+export const configureResponseFiltersSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid actor ID'),
+  }),
+  body: z.object({
+    path: z.string().optional(),
+    properties: z.array(z.string()).optional(),
+    defaultResult: z.number().int().min(1).max(1000).optional(),
+  }),
+});
+
 // Custom type definitions based on the schemas
 export type CreateActorRequest = z.infer<typeof createActorSchema>;
 export type UpdateActorRequest = z.infer<typeof updateActorSchema>;
 export type RateActorRequest = z.infer<typeof rateActorSchema>;
 export type ExecuteActorRequest = z.infer<typeof executeActorSchema>;
 export type DeepSeekActorRequest = z.infer<typeof deepSeekActorSchema>;
+export type ConfigureActorWithAIRequest = z.infer<
+  typeof configureActorWithAISchema
+>;
+export type TestActorScrapingRequest = z.infer<typeof testActorScrapingSchema>;
+export type ConfigureResponseFiltersRequest = z.infer<
+  typeof configureResponseFiltersSchema
+>;
